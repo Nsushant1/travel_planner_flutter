@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' as sb;
 
 enum AuthStatus { loading, authenticated, unauthenticated }
 
@@ -7,108 +9,156 @@ class AuthState {
   final AuthStatus status;
   final String? userId;
   final String? email;
+  final String? displayName;
   final String? errorMessage;
+  final String? infoMessage;
 
   const AuthState({
     this.status = AuthStatus.loading,
     this.userId,
     this.email,
+    this.displayName,
     this.errorMessage,
+    this.infoMessage,
   });
 
   bool get isAuthenticated => status == AuthStatus.authenticated;
   bool get isLoading => status == AuthStatus.loading;
-
-  AuthState copyWith({
-    AuthStatus? status,
-    String? userId,
-    String? email,
-    String? errorMessage,
-  }) {
-    return AuthState(
-      status: status ?? this.status,
-      userId: userId ?? this.userId,
-      email: email ?? this.email,
-      errorMessage: errorMessage ?? this.errorMessage,
-    );
-  }
 }
 
-// ChangeNotifier so GoRouter can use it as refreshListenable
 class AuthNotifier extends ChangeNotifier {
-  AuthState _state = const AuthState(status: AuthStatus.loading);
+  final _client = sb.Supabase.instance.client;
+  StreamSubscription<sb.AuthState>? _authSub;
 
+  AuthState _state = const AuthState(status: AuthStatus.loading);
   AuthState get state => _state;
 
-  void _setState(AuthState newState) {
-    _state = newState;
+  void _setState(AuthState s) {
+    _state = s;
     notifyListeners();
   }
 
   AuthNotifier() {
-    _initialize();
+    _init();
   }
 
-  void _initialize() {
-    // Simulate checking for an existing session (will use Supabase in Phase 2)
-    Future.delayed(const Duration(milliseconds: 800), () {
-      _setState(const AuthState(status: AuthStatus.unauthenticated));
+  void _init() {
+    _authSub = _client.auth.onAuthStateChange.listen((data) {
+      final event = data.event;
+      final session = data.session;
+
+      switch (event) {
+        case sb.AuthChangeEvent.initialSession:
+        case sb.AuthChangeEvent.signedIn:
+        case sb.AuthChangeEvent.tokenRefreshed:
+        case sb.AuthChangeEvent.userUpdated:
+          if (session != null) {
+            _setState(AuthState(
+              status: AuthStatus.authenticated,
+              userId: session.user.id,
+              email: session.user.email,
+              displayName: session.user.userMetadata?['full_name'] as String?,
+            ));
+          } else {
+            _setState(const AuthState(status: AuthStatus.unauthenticated));
+          }
+        case sb.AuthChangeEvent.signedOut:
+          _setState(const AuthState(status: AuthStatus.unauthenticated));
+        default:
+          break;
+      }
     });
   }
 
   Future<bool> signIn(String email, String password) async {
-    _setState(_state.copyWith(status: AuthStatus.loading, errorMessage: null));
+    _setState(const AuthState(status: AuthStatus.loading));
     try {
-      // TODO Phase 2: replace with Supabase signIn
-      await Future.delayed(const Duration(seconds: 1));
-
-      if (email.isEmpty || password.length < 6) {
-        throw Exception('Invalid credentials');
-      }
-
-      _setState(AuthState(
-        status: AuthStatus.authenticated,
-        userId: 'local_user',
+      final res = await _client.auth.signInWithPassword(
         email: email,
+        password: password,
+      );
+      if (res.session != null) return true;
+
+      _setState(const AuthState(
+        status: AuthStatus.unauthenticated,
+        errorMessage: 'Sign in failed. Please try again.',
       ));
-      return true;
-    } catch (e) {
+      return false;
+    } on sb.AuthException catch (e) {
       _setState(AuthState(
         status: AuthStatus.unauthenticated,
-        errorMessage: e.toString().replaceFirst('Exception: ', ''),
+        errorMessage: _friendlyError(e.message),
+      ));
+      return false;
+    } catch (_) {
+      _setState(const AuthState(
+        status: AuthStatus.unauthenticated,
+        errorMessage: 'Network error — check your connection.',
       ));
       return false;
     }
   }
 
-  Future<bool> signUp(String email, String password) async {
-    _setState(_state.copyWith(status: AuthStatus.loading, errorMessage: null));
+  Future<bool> signUp(
+    String email,
+    String password, {
+    String? fullName,
+  }) async {
+    _setState(const AuthState(status: AuthStatus.loading));
     try {
-      // TODO Phase 2: replace with Supabase signUp
-      await Future.delayed(const Duration(seconds: 1));
+      final res = await _client.auth.signUp(
+        email: email,
+        password: password,
+        data: {'full_name': fullName ?? ''},
+      );
 
-      if (email.isEmpty || password.length < 6) {
-        throw Exception('Password must be at least 6 characters');
+      if (res.session != null) {
+        // Email confirmation disabled — user is immediately signed in.
+        return true;
       }
 
-      _setState(AuthState(
-        status: AuthStatus.authenticated,
-        userId: 'local_user',
-        email: email,
+      // Email confirmation enabled — session is null until link is clicked.
+      _setState(const AuthState(
+        status: AuthStatus.unauthenticated,
+        infoMessage:
+            'Account created! Check your email and click the confirmation link before signing in.',
       ));
       return true;
-    } catch (e) {
+    } on sb.AuthException catch (e) {
       _setState(AuthState(
         status: AuthStatus.unauthenticated,
-        errorMessage: e.toString().replaceFirst('Exception: ', ''),
+        errorMessage: _friendlyError(e.message),
+      ));
+      return false;
+    } catch (_) {
+      _setState(const AuthState(
+        status: AuthStatus.unauthenticated,
+        errorMessage: 'Network error — check your connection.',
       ));
       return false;
     }
   }
 
   Future<void> signOut() async {
-    // TODO Phase 2: call Supabase signOut
-    _setState(const AuthState(status: AuthStatus.unauthenticated));
+    await _client.auth.signOut();
+  }
+
+  String _friendlyError(String raw) {
+    final lower = raw.toLowerCase();
+    if (lower.contains('invalid login')) return 'Incorrect email or password.';
+    if (lower.contains('email not confirmed')) {
+      return 'Please confirm your email before signing in.';
+    }
+    if (lower.contains('user already registered')) {
+      return 'An account with this email already exists.';
+    }
+    return raw;
+  }
+
+  @override
+  void dispose() {
+    _authSub?.cancel();
+    super.dispose();
   }
 }
 
@@ -116,7 +166,6 @@ final authNotifierProvider = ChangeNotifierProvider<AuthNotifier>(
   (ref) => AuthNotifier(),
 );
 
-// Convenience provider for just reading auth state
 final authStateProvider = Provider<AuthState>(
   (ref) => ref.watch(authNotifierProvider).state,
 );

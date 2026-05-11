@@ -10,8 +10,9 @@ class HomeDashboardScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authStateProvider);
-    final email = authState.email ?? 'Traveler';
-    final firstName = email.split('@').first;
+    final firstName = authState.displayName?.split(' ').first
+        ?? authState.email?.split('@').first
+        ?? 'Traveler';
 
     return Scaffold(
       backgroundColor: AppColors.background,

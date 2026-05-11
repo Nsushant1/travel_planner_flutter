@@ -11,6 +11,7 @@ class ProfileScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authStateProvider);
     final email = authState.email ?? '';
+    final displayName = authState.displayName ?? email.split('@').first;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -18,11 +19,11 @@ class ProfileScreen extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.all(24),
         children: [
-          _buildAvatar(email),
+          _buildAvatar(displayName, email),
           const SizedBox(height: 32),
           _buildSection('Account', [
+            _buildTile(Icons.person_outline, 'Name', displayName),
             _buildTile(Icons.email_outlined, 'Email', email),
-            _buildTile(Icons.person_outline, 'Username', email.split('@').first),
           ]),
           const SizedBox(height: 20),
           _buildSection('App', [
@@ -45,8 +46,13 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildAvatar(String email) {
-    final initials = email.isNotEmpty ? email[0].toUpperCase() : '?';
+  Widget _buildAvatar(String displayName, String email) {
+    final parts = displayName.trim().split(' ');
+    final initials = parts.length >= 2
+        ? '${parts.first[0]}${parts.last[0]}'.toUpperCase()
+        : displayName.isNotEmpty
+            ? displayName[0].toUpperCase()
+            : '?';
     return Center(
       child: Column(
         children: [

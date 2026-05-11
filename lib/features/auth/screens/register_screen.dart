@@ -13,6 +13,7 @@ class RegisterScreen extends ConsumerStatefulWidget {
 
 class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
@@ -21,6 +22,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
   @override
   void dispose() {
+    _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
@@ -33,6 +35,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     await notifier.signUp(
       _emailController.text.trim(),
       _passwordController.text,
+      fullName: _nameController.text.trim(),
     );
   }
 
@@ -66,13 +69,18 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 const SizedBox(height: 8),
                 _buildHeader(),
                 const SizedBox(height: 36),
+                _buildNameField(),
+                const SizedBox(height: 16),
                 _buildEmailField(),
                 const SizedBox(height: 16),
                 _buildPasswordField(),
                 const SizedBox(height: 16),
                 _buildConfirmPasswordField(),
                 const SizedBox(height: 32),
-                if (authState.errorMessage != null) _buildError(authState.errorMessage!),
+                if (authState.errorMessage != null)
+                  _buildBanner(authState.errorMessage!, isError: true),
+                if (authState.infoMessage != null)
+                  _buildBanner(authState.infoMessage!, isError: false),
                 _buildRegisterButton(authState.isLoading),
                 const SizedBox(height: 24),
                 _buildLoginLink(),
@@ -104,6 +112,24 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           style: TextStyle(fontSize: 15, color: AppColors.textSecondary),
         ),
       ],
+    );
+  }
+
+  Widget _buildNameField() {
+    return TextFormField(
+      controller: _nameController,
+      keyboardType: TextInputType.name,
+      textInputAction: TextInputAction.next,
+      textCapitalization: TextCapitalization.words,
+      decoration: const InputDecoration(
+        labelText: 'Full name',
+        prefixIcon: Icon(Icons.person_outline, color: AppColors.textSecondary),
+      ),
+      validator: (v) {
+        if (v == null || v.trim().isEmpty) return 'Full name is required';
+        if (v.trim().length < 2) return 'Enter your real name';
+        return null;
+      },
     );
   }
 
@@ -173,21 +199,23 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     );
   }
 
-  Widget _buildError(String message) {
+  Widget _buildBanner(String message, {required bool isError}) {
+    final color = isError ? AppColors.error : AppColors.success;
+    final icon = isError ? Icons.error_outline : Icons.check_circle_outline;
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: AppColors.error.withValues(alpha: 0.08),
+        color: color.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
-          const Icon(Icons.error_outline, color: AppColors.error, size: 18),
+          Icon(icon, color: color, size: 18),
           const SizedBox(width: 8),
           Expanded(
-            child: Text(message, style: const TextStyle(color: AppColors.error, fontSize: 13)),
+            child: Text(message, style: TextStyle(color: color, fontSize: 13)),
           ),
         ],
       ),
