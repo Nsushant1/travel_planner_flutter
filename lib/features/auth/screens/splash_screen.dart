@@ -1,17 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-import '../providers/auth_provider.dart';
 import '../../../core/constants/app_colors.dart';
 
-class SplashScreen extends ConsumerStatefulWidget {
+// Navigation away from splash is handled entirely by GoRouter's redirect.
+// No local ref.listen needed — that caused a double-navigation race condition.
+class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
   @override
-  ConsumerState<SplashScreen> createState() => _SplashScreenState();
+  State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends ConsumerState<SplashScreen>
+class _SplashScreenState extends State<SplashScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _animController;
   late Animation<double> _fadeAnim;
@@ -39,15 +38,6 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
-    // Listen to auth state changes — navigate when init is complete
-    ref.listen<AuthState>(authStateProvider, (prev, next) {
-      if (next.status == AuthStatus.authenticated) {
-        context.go('/home');
-      } else if (next.status == AuthStatus.unauthenticated) {
-        context.go('/login');
-      }
-    });
-
     return Scaffold(
       backgroundColor: AppColors.primary,
       body: Center(

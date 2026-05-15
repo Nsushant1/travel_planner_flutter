@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
 import '../../../core/constants/app_colors.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../../saved_trips/providers/saved_trips_provider.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -10,109 +12,312 @@ class ProfileScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authStateProvider);
+    final tripsAsync = ref.watch(savedTripsProvider);
+
     final email = authState.email ?? '';
-    final displayName = authState.displayName ?? email.split('@').first;
+    final displayName =
+        authState.displayName ?? email.split('@').first;
+    final initials = _initials(displayName);
+    final tripCount = tripsAsync.valueOrNull?.length ?? 0;
+    final totalDays = tripsAsync.valueOrNull
+            ?.fold<int>(0, (sum, t) => sum + t.totalDays) ??
+        0;
+    final destinations = tripsAsync.valueOrNull
+            ?.map((t) => t.destination)
+            .toSet()
+            .length ??
+        0;
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(title: const Text('Profile')),
-      body: ListView(
-        padding: const EdgeInsets.all(24),
-        children: [
-          _buildAvatar(displayName, email),
-          const SizedBox(height: 32),
-          _buildSection('Account', [
-            _buildTile(Icons.person_outline, 'Name', displayName),
-            _buildTile(Icons.email_outlined, 'Email', email),
-          ]),
-          const SizedBox(height: 20),
-          _buildSection('App', [
-            _buildTile(Icons.info_outline, 'Version', '1.0.0'),
-          ]),
-          const SizedBox(height: 32),
-          OutlinedButton.icon(
-            onPressed: () async {
-              await ref.read(authNotifierProvider).signOut();
-              if (context.mounted) context.go('/login');
-            },
-            icon: const Icon(Icons.logout_rounded, color: AppColors.error),
-            label: const Text('Sign Out', style: TextStyle(color: AppColors.error)),
-            style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: AppColors.error),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAvatar(String displayName, String email) {
-    final parts = displayName.trim().split(' ');
-    final initials = parts.length >= 2
-        ? '${parts.first[0]}${parts.last[0]}'.toUpperCase()
-        : displayName.isNotEmpty
-            ? displayName[0].toUpperCase()
-            : '?';
-    return Center(
-      child: Column(
-        children: [
-          CircleAvatar(
-            radius: 42,
+      body: CustomScrollView(
+        slivers: [
+          // ── Gradient header ──
+          SliverAppBar(
+            expandedHeight: 200,
+            pinned: true,
             backgroundColor: AppColors.primary,
-            child: Text(
-              initials,
-              style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.w700),
+            foregroundColor: Colors.white,
+            automaticallyImplyLeading: false,
+            flexibleSpace: FlexibleSpaceBar(
+              background: Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [AppColors.primaryDark, AppColors.primary],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
+                child: SafeArea(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const SizedBox(height: 16),
+                      CircleAvatar(
+                        radius: 40,
+                        backgroundColor:
+                            Colors.white.withValues(alpha: 0.2),
+                        child: Text(
+                          initials,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 28,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        displayName,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        email,
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.75),
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ),
           ),
-          const SizedBox(height: 12),
-          Text(
-            email,
-            style: const TextStyle(fontSize: 15, color: AppColors.textSecondary),
+
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // ── Stats row ──
+                  Row(
+                    children: [
+                      _StatCard(
+                          value: '$tripCount',
+                          label: 'Trips',
+                          icon: Icons.luggage_rounded,
+                          color: AppColors.primary),
+                      const SizedBox(width: 12),
+                      _StatCard(
+                          value: '$destinations',
+                          label: 'Destinations',
+                          icon: Icons.location_on_rounded,
+                          color: const Color(0xFF7C3AED)),
+                      const SizedBox(width: 12),
+                      _StatCard(
+                          value: '$totalDays',
+                          label: 'Days Planned',
+                          icon: Icons.calendar_today_rounded,
+                          color: const Color(0xFF059669)),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+
+                  // ── Account section ──
+                  _SectionLabel(label: 'Account'),
+                  const SizedBox(height: 8),
+                  _InfoCard(tiles: [
+                    _Tile(
+                        icon: Icons.person_outline,
+                        label: 'Name',
+                        value: displayName),
+                    _Tile(
+                        icon: Icons.email_outlined,
+                        label: 'Email',
+                        value: email),
+                  ]),
+                  const SizedBox(height: 20),
+
+                  // ── App section ──
+                  _SectionLabel(label: 'App'),
+                  const SizedBox(height: 8),
+                  _InfoCard(tiles: [
+                    _Tile(
+                        icon: Icons.info_outline,
+                        label: 'Version',
+                        value: '1.0.0'),
+                    _Tile(
+                        icon: Icons.map_outlined,
+                        label: 'Maps',
+                        value: 'OpenStreetMap'),
+                    _Tile(
+                        icon: Icons.cloud_outlined,
+                        label: 'Weather',
+                        value: 'OpenWeatherMap'),
+                  ]),
+                  const SizedBox(height: 32),
+
+                  // ── Sign out ──
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () async {
+                        await ref
+                            .read(authNotifierProvider)
+                            .signOut();
+                        if (context.mounted) context.go('/login');
+                      },
+                      icon: const Icon(Icons.logout_rounded,
+                          color: AppColors.error),
+                      label: const Text('Sign Out',
+                          style:
+                              TextStyle(color: AppColors.error)),
+                      style: OutlinedButton.styleFrom(
+                        side:
+                            const BorderSide(color: AppColors.error),
+                        padding:
+                            const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildSection(String title, List<Widget> tiles) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textSecondary,
-            letterSpacing: 0.8,
-          ),
+  static String _initials(String name) {
+    final parts = name.trim().split(' ');
+    if (parts.length >= 2) {
+      return '${parts.first[0]}${parts.last[0]}'.toUpperCase();
+    }
+    return name.isNotEmpty ? name[0].toUpperCase() : '?';
+  }
+}
+
+// ─── Stat card ────────────────────────────────────────────────────────────────
+
+class _StatCard extends StatelessWidget {
+  final String value;
+  final String label;
+  final IconData icon;
+  final Color color;
+  const _StatCard(
+      {required this.value,
+      required this.label,
+      required this.icon,
+      required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.divider),
         ),
-        const SizedBox(height: 8),
-        Container(
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: AppColors.divider),
-          ),
-          child: Column(children: tiles),
+        child: Column(
+          children: [
+            Icon(icon, color: color, size: 22),
+            const SizedBox(height: 6),
+            Text(value,
+                style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    color: color)),
+            const SizedBox(height: 2),
+            Text(label,
+                style: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.textSecondary)),
+          ],
         ),
-      ],
+      ),
     );
   }
+}
 
-  Widget _buildTile(IconData icon, String label, String value) {
+// ─── Section label ────────────────────────────────────────────────────────────
+
+class _SectionLabel extends StatelessWidget {
+  final String label;
+  const _SectionLabel({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      label.toUpperCase(),
+      style: const TextStyle(
+        fontSize: 11,
+        fontWeight: FontWeight.w700,
+        color: AppColors.textSecondary,
+        letterSpacing: 1.0,
+      ),
+    );
+  }
+}
+
+// ─── Info card ────────────────────────────────────────────────────────────────
+
+class _InfoCard extends StatelessWidget {
+  final List<_Tile> tiles;
+  const _InfoCard({required this.tiles});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.divider),
+      ),
+      child: Column(
+        children: tiles.asMap().entries.map((e) {
+          final isLast = e.key == tiles.length - 1;
+          return Column(
+            children: [
+              e.value,
+              if (!isLast)
+                const Divider(
+                    height: 1, indent: 48, color: AppColors.divider),
+            ],
+          );
+        }).toList(),
+      ),
+    );
+  }
+}
+
+class _Tile extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  const _Tile(
+      {required this.icon, required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       child: Row(
         children: [
-          Icon(icon, size: 20, color: AppColors.textSecondary),
+          Icon(icon, size: 18, color: AppColors.textSecondary),
           const SizedBox(width: 12),
-          Text(label, style: const TextStyle(fontSize: 14, color: AppColors.textSecondary)),
+          Text(label,
+              style: const TextStyle(
+                  fontSize: 14, color: AppColors.textSecondary)),
           const Spacer(),
-          Text(
-            value,
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
-          ),
+          Text(value,
+              style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary)),
         ],
       ),
     );

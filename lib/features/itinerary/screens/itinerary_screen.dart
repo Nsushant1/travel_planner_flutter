@@ -5,8 +5,12 @@ import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../data/models/trip.dart';
 import '../../../data/models/itinerary_day.dart';
+import '../../../data/models/weather_data.dart';
 import '../providers/itinerary_provider.dart';
 import '../widgets/activity_timeline_card.dart';
+import '../../weather/providers/weather_provider.dart';
+import '../../weather/widgets/weather_widgets.dart';
+import '../../saved_trips/providers/saved_trips_provider.dart';
 
 class ItineraryScreen extends ConsumerWidget {
   final String tripId;
@@ -59,18 +63,19 @@ class ItineraryScreen extends ConsumerWidget {
 
 // ─── Sliver App Bar ───────────────────────────────────────────────────────────
 
-class _TripSliverAppBar extends StatelessWidget {
+class _TripSliverAppBar extends ConsumerWidget {
   final Trip trip;
   const _TripSliverAppBar({required this.trip});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final fmt = DateFormat('dd MMM');
     final dateRange =
         '${fmt.format(trip.startDate)} – ${fmt.format(trip.endDate)}';
+    final weatherAsync = ref.watch(weatherProvider(trip.destination));
 
     return SliverAppBar(
-      expandedHeight: 160,
+      expandedHeight: 175,
       pinned: true,
       backgroundColor: AppColors.primary,
       foregroundColor: Colors.white,
@@ -79,7 +84,7 @@ class _TripSliverAppBar extends StatelessWidget {
         onPressed: () => context.pop(),
       ),
       flexibleSpace: FlexibleSpaceBar(
-        titlePadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        titlePadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
         title: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -104,6 +109,15 @@ class _TripSliverAppBar extends StatelessWidget {
                 const SizedBox(width: 8),
                 _BudgetBadge(type: trip.budgetType),
               ],
+            ),
+            const SizedBox(height: 6),
+            // Weather chip
+            weatherAsync.when(
+              data: (weather) => weather != null
+                  ? CurrentWeatherChip(weather: weather)
+                  : const SizedBox.shrink(),
+              loading: () => const WeatherChipLoading(),
+              error: (_, __) => const SizedBox.shrink(),
             ),
           ],
         ),
@@ -130,6 +144,30 @@ class _TripSliverAppBar extends StatelessWidget {
           icon: const Icon(Icons.map_outlined),
           tooltip: 'View Map',
           onPressed: () => context.push('/map/${trip.id}'),
+        ),
+        Consumer(
+          builder: (context, ref, _) {
+            final isSaved = ref.watch(savedTripsProvider).whenOrNull(
+                  data: (list) => list.any((t) => t.id == trip.id),
+                ) ?? false;
+            return IconButton(
+              icon: Icon(
+                isSaved ? Icons.bookmark_rounded : Icons.bookmark_outline_rounded,
+                color: isSaved ? AppColors.secondary : Colors.white,
+              ),
+              tooltip: isSaved ? 'Saved' : 'Save trip',
+              onPressed: () async {
+                await ref.read(savedTripsProvider.notifier).saveTrip(trip);
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Trip saved!'),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              },
+            );
+          },
         ),
       ],
     );
@@ -181,9 +219,7 @@ class _DayTabBar extends StatelessWidget {
         labelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
         unselectedLabelStyle:
             const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
-        tabs: days
-            .map((d) => Tab(text: 'Day ${d.dayNumber}'))
-            .toList(),
+        tabs: days.map((d) => Tab(text: 'Day ${d.dayNumber}')).toList(),
       ),
     );
   }
@@ -191,15 +227,30 @@ class _DayTabBar extends StatelessWidget {
 
 // ─── Day view ─────────────────────────────────────────────────────────────────
 
-class _DayView extends StatelessWidget {
+class _DayView extends ConsumerWidget {
   final ItineraryDay day;
   final Trip trip;
   const _DayView({required this.day, required this.trip});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final date = trip.startDate.add(Duration(days: day.dayNumber - 1));
     final fmt = DateFormat('EEEE, dd MMM');
+    final weatherAsync = ref.watch(weatherProvider(trip.destination));
+
+    // Find forecast entry matching this day's date (if within OWM 5-day window)
+    DayWeather? dayForecast;
+    weatherAsync.whenData((weather) {
+      if (weather == null) return;
+      for (final f in weather.forecast) {
+        if (f.date.year == date.year &&
+            f.date.month == date.month &&
+            f.date.day == date.day) {
+          dayForecast = f;
+          break;
+        }
+      }
+    });
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
@@ -229,8 +280,7 @@ class _DayView extends StatelessWidget {
               ),
             ),
             Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
                 color: AppColors.primaryLight.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
@@ -245,6 +295,11 @@ class _DayView extends StatelessWidget {
             ),
           ],
         ),
+        // Per-day weather forecast row (only when forecast data available)
+        if (dayForecast != null) ...[
+          const SizedBox(height: 14),
+          DayForecastRow(day: dayForecast!),
+        ],
         const SizedBox(height: 20),
         // Activity timeline
         ...day.activities.asMap().entries.map((entry) {
@@ -252,6 +307,7 @@ class _DayView extends StatelessWidget {
           return ActivityTimelineCard(
             activity: entry.value,
             isLast: isLast,
+            onTap: () => context.push('/place/${entry.value.id}'),
           );
         }),
       ],

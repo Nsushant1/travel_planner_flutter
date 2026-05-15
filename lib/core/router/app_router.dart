@@ -1,6 +1,8 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/utils/onboarding_notifier.dart';
 import '../../features/auth/providers/auth_provider.dart';
 import '../../features/auth/screens/splash_screen.dart';
 import '../../features/auth/screens/login_screen.dart';
@@ -15,17 +17,54 @@ import '../../features/itinerary/screens/itinerary_screen.dart';
 import '../../features/route_optimization/screens/route_optimization_screen.dart';
 import '../../features/map/screens/map_screen.dart';
 import '../../features/place_details/screens/place_details_screen.dart';
+import '../../features/onboarding/screens/onboarding_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
-  final authNotifier = ref.watch(authNotifierProvider);
+  // ref.read — we only need the notifier *object* for refreshListenable.
+  // ref.watch would rebuild the entire GoRouter on every auth/onboarding
+  // state change, resetting the navigation stack each time.
+  final authNotifier = ref.read(authNotifierProvider);
+  final onboardingNotifier = ref.read(onboardingNotifierProvider);
 
   return GoRouter(
     initialLocation: '/splash',
-    refreshListenable: authNotifier,
+    refreshListenable: Listenable.merge([authNotifier, onboardingNotifier]),
+    errorBuilder: (context, state) => Scaffold(
+      appBar: AppBar(title: const Text('Page Not Found')),
+      body: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.map_outlined, size: 48, color: Colors.grey),
+            const SizedBox(height: 16),
+            const Text(
+              'That page does not exist.',
+              style: TextStyle(fontSize: 16, color: Colors.grey),
+            ),
+            const SizedBox(height: 24),
+            TextButton(
+              onPressed: () => context.go('/home'),
+              child: const Text('Go Home'),
+            ),
+          ],
+        ),
+      ),
+    ),
     redirect: (context, state) {
-      final authState = authNotifier.state;
       final path = state.uri.path;
 
+      // Onboarding gate: if not done, keep user in onboarding.
+      // Returning null here prevents a /splash→/onboarding→/splash
+      // infinite-redirect loop when auth is still loading.
+      if (!onboardingNotifier.isDone) {
+        return path == '/onboarding' ? null : '/onboarding';
+      }
+
+      // Onboarding is done — redirect away if someone navigates back to it.
+      if (path == '/onboarding') return '/home';
+
+      // Auth guards
+      final authState = authNotifier.state;
       final isLoading = authState.status == AuthStatus.loading;
       final isAuthenticated = authState.status == AuthStatus.authenticated;
 
@@ -39,6 +78,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
+      GoRoute(
+        path: '/onboarding',
+        builder: (context, state) => const OnboardingScreen(),
+      ),
       GoRoute(
         path: '/splash',
         builder: (context, state) => const SplashScreen(),

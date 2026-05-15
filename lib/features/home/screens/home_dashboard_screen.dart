@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/widgets/shimmer.dart';
+import '../../../data/models/trip.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../../itinerary/providers/itinerary_provider.dart';
+import '../../saved_trips/providers/saved_trips_provider.dart';
 
 class HomeDashboardScreen extends ConsumerWidget {
   const HomeDashboardScreen({super.key});
@@ -22,7 +27,7 @@ class HomeDashboardScreen extends ConsumerWidget {
             _buildHeader(firstName),
             _buildPlanTripCard(context),
             _buildFeaturesSection(),
-            _buildEmptyTrips(),
+            const _RecentTripsSection(),
           ],
         ),
       ),
@@ -183,56 +188,6 @@ class HomeDashboardScreen extends ConsumerWidget {
     );
   }
 
-  SliverToBoxAdapter _buildEmptyTrips() {
-    return SliverToBoxAdapter(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 28, 24, 32),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Recent Trips',
-              style: TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 40),
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.divider),
-              ),
-              child: const Column(
-                children: [
-                  Icon(Icons.luggage_outlined, size: 48, color: AppColors.textHint),
-                  SizedBox(height: 12),
-                  Text(
-                    'No trips yet',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                  SizedBox(height: 4),
-                  Text(
-                    'Tap "Plan a New Trip" to get started',
-                    style: TextStyle(fontSize: 13, color: AppColors.textHint),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   String _capitalize(String s) =>
       s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
 }
@@ -300,6 +255,194 @@ class _FeatureChip extends StatelessWidget {
                 color: AppColors.textPrimary,
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Recent Trips Section ─────────────────────────────────────────────────────
+
+class _RecentTripsSection extends ConsumerWidget {
+  const _RecentTripsSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tripsAsync = ref.watch(savedTripsProvider);
+
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(24, 28, 24, 32),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Recent Trips',
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                tripsAsync.maybeWhen(
+                  data: (trips) => trips.isNotEmpty
+                      ? GestureDetector(
+                          onTap: () => context.go('/saved'),
+                          child: const Text(
+                            'See all',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                        )
+                      : const SizedBox.shrink(),
+                  orElse: () => const SizedBox.shrink(),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            tripsAsync.when(
+              loading: () => const Column(
+                children: [
+                  TripTileSkeleton(),
+                  TripTileSkeleton(),
+                  TripTileSkeleton(),
+                ],
+              ),
+              error: (_, __) => const SizedBox.shrink(),
+              data: (trips) => trips.isEmpty
+                  ? _emptyState()
+                  : Column(
+                      children: trips
+                          .take(3)
+                          .map((t) => _RecentTripTile(trip: t))
+                          .toList(),
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _emptyState() => Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 36),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.divider),
+        ),
+        child: const Column(
+          children: [
+            Icon(Icons.luggage_outlined, size: 44, color: AppColors.textHint),
+            SizedBox(height: 10),
+            Text(
+              'No trips yet',
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textSecondary,
+              ),
+            ),
+            SizedBox(height: 4),
+            Text(
+              'Tap "Plan a New Trip" to get started',
+              style: TextStyle(fontSize: 12, color: AppColors.textHint),
+            ),
+          ],
+        ),
+      );
+}
+
+class _RecentTripTile extends ConsumerWidget {
+  final Trip trip;
+  const _RecentTripTile({required this.trip});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final fmt = DateFormat('dd MMM yyyy');
+    final (budgetLabel, budgetColor) = switch (trip.budgetType) {
+      BudgetType.low => ('Budget', AppColors.budgetLow),
+      BudgetType.medium => ('Mid-Range', AppColors.budgetMedium),
+      BudgetType.high => ('Luxury', AppColors.budgetHigh),
+    };
+
+    return GestureDetector(
+      onTap: () {
+        ref.read(currentTripProvider.notifier).state = trip;
+        context.push('/itinerary/${trip.id}');
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.divider),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [AppColors.primaryDark, AppColors.primaryLight],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.flight_takeoff_rounded,
+                  color: Colors.white, size: 22),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    trip.destination,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    '${fmt.format(trip.startDate)}  •  ${trip.totalDays} days',
+                    style: const TextStyle(
+                        fontSize: 11, color: AppColors.textSecondary),
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: budgetColor.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                budgetLabel,
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  color: budgetColor,
+                ),
+              ),
+            ),
+            const SizedBox(width: 6),
+            const Icon(Icons.chevron_right_rounded,
+                size: 18, color: AppColors.textHint),
           ],
         ),
       ),

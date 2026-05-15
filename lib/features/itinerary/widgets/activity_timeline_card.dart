@@ -5,10 +5,12 @@ import '../../../data/models/activity.dart';
 class ActivityTimelineCard extends StatelessWidget {
   final Activity activity;
   final bool isLast;
+  final VoidCallback? onTap;
 
   const ActivityTimelineCard({
     required this.activity,
     this.isLast = false,
+    this.onTap,
     super.key,
   });
 
@@ -51,67 +53,79 @@ class ActivityTimelineCard extends StatelessWidget {
           Expanded(
             child: Padding(
               padding: EdgeInsets.only(bottom: isLast ? 0 : 16),
-              child: Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
+              child: Material(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(14),
+                child: InkWell(
+                  onTap: onTap,
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: AppColors.divider),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Slot label + duration
-                    Row(
+                  child: Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: AppColors.divider),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: slot.color.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            slot.label,
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: slot.color,
+                        // Slot label + duration + chevron
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: slot.color.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                slot.label,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: slot.color,
+                                ),
+                              ),
                             ),
+                            const Spacer(),
+                            const Icon(Icons.schedule_rounded,
+                                size: 13, color: AppColors.textHint),
+                            const SizedBox(width: 3),
+                            Text(
+                              _formatDuration(activity.estimatedDurationMinutes),
+                              style: const TextStyle(
+                                  fontSize: 11, color: AppColors.textHint),
+                            ),
+                            if (onTap != null) ...[
+                              const SizedBox(width: 6),
+                              const Icon(Icons.chevron_right_rounded,
+                                  size: 16, color: AppColors.textHint),
+                            ],
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        // Title
+                        Text(
+                          activity.title,
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimary,
                           ),
                         ),
-                        const Spacer(),
-                        const Icon(Icons.schedule_rounded,
-                            size: 13, color: AppColors.textHint),
-                        const SizedBox(width: 3),
+                        const SizedBox(height: 4),
+                        // Description
                         Text(
-                          _formatDuration(activity.estimatedDurationMinutes),
+                          activity.description,
                           style: const TextStyle(
-                              fontSize: 11, color: AppColors.textHint),
+                            fontSize: 13,
+                            color: AppColors.textSecondary,
+                            height: 1.4,
+                          ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8),
-                    // Title
-                    Text(
-                      activity.title,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    // Description
-                    Text(
-                      activity.description,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: AppColors.textSecondary,
-                        height: 1.4,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ),

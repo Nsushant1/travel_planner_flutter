@@ -26,8 +26,9 @@ dependencies:
   # Backend
   supabase_flutter: ^2.3.4
 
-  # Maps (Android)
-  google_maps_flutter: ^2.5.3
+  # Maps (OpenStreetMap — no API key required)
+  flutter_map: ^7.0.2
+  latlong2: ^0.9.1
 
   # Local storage
   hive: ^2.2.3

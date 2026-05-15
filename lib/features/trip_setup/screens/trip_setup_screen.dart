@@ -417,20 +417,62 @@ class _GenerateButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return ElevatedButton.icon(
-      onPressed: state.isValid
-          ? () {
-              final trip = ref.read(tripSetupProvider.notifier).buildTrip();
-              ref.read(currentTripProvider.notifier).state = trip;
-              context.push('/itinerary/${trip.id}');
-            }
-          : null,
-      icon: const Icon(Icons.auto_awesome_rounded, size: 20),
-      label: const Text('Generate My Itinerary'),
-      style: ElevatedButton.styleFrom(
-        disabledBackgroundColor: AppColors.divider,
-        disabledForegroundColor: AppColors.textHint,
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (state.generationError != null) ...[
+          Container(
+            padding: const EdgeInsets.all(12),
+            margin: const EdgeInsets.only(bottom: 12),
+            decoration: BoxDecoration(
+              color: Colors.orange.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: Colors.orange.withValues(alpha: 0.4)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.info_outline, color: Colors.orange, size: 18),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    state.generationError!,
+                    style: const TextStyle(fontSize: 12, color: Colors.orange),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+        ElevatedButton.icon(
+          onPressed: state.isValid
+              ? () async {
+                  final trip = await ref
+                      .read(tripSetupProvider.notifier)
+                      .generateTrip();
+                  if (!context.mounted) return;
+                  ref.read(currentTripProvider.notifier).state = trip;
+                  context.push('/itinerary/${trip.id}');
+                }
+              : null,
+          icon: state.isGenerating
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                )
+              : const Icon(Icons.auto_awesome_rounded, size: 20),
+          label: Text(state.isGenerating
+              ? 'Searching places in ${ref.watch(tripSetupProvider).destination.trim().isNotEmpty ? ref.watch(tripSetupProvider).destination.trim() : ''}...'
+              : 'Generate My Itinerary'),
+          style: ElevatedButton.styleFrom(
+            disabledBackgroundColor: AppColors.divider,
+            disabledForegroundColor: AppColors.textHint,
+          ),
+        ),
+      ],
     );
   }
 }

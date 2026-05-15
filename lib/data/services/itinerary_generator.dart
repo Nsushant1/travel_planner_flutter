@@ -1,7 +1,11 @@
+import 'dart:math';
+
 import 'package:uuid/uuid.dart';
 import '../models/activity.dart';
 import '../models/itinerary_day.dart';
+import '../models/place.dart';
 import '../models/trip.dart';
+import 'places_service.dart';
 
 // ---------- internal template type ----------
 typedef _T = ({String title, String desc, int mins});
@@ -179,7 +183,189 @@ class ItineraryGenerator {
     'Highlights of {dest}',
   ];
 
-  // ─── Public API ────────────────────────────────────────────────────────────
+  // ─── Async API (real places via OpenStreetMap) ─────────────────────────────
+
+  /// Fetches real POIs from OpenStreetMap for [destination] and builds a
+  /// destination-specific itinerary. Falls back to template generation if
+  /// geocoding fails or fewer than [numDays]×3 POIs are returned.
+  static Future<List<ItineraryDay>> generateAsync({
+    required String destination,
+    required int numDays,
+    required BudgetType budget,
+    required List<TripInterest> interests,
+    required PlacesService placesService,
+  }) async {
+    final location = await placesService.geocode(destination);
+    if (location == null) {
+      return generate(
+        destination: destination,
+        numDays: numDays,
+        budget: budget,
+        interests: interests,
+      );
+    }
+
+    final places = await placesService.fetchNearbyPois(
+      lat: location.lat,
+      lng: location.lng,
+      interests: interests,
+    );
+
+    final minNeeded = numDays * 3;
+    if (places.length < minNeeded) {
+      // Not enough real places — use templates but inject city coordinates
+      // with small offsets so the TSP optimizer has spread coordinates.
+      return _fromTemplatesWithCoords(
+        destination: destination,
+        numDays: numDays,
+        budget: budget,
+        interests: interests,
+        baseLat: location.lat,
+        baseLng: location.lng,
+      );
+    }
+
+    return _fromRealPlaces(
+      destination: destination,
+      numDays: numDays,
+      places: places,
+      interests: interests,
+    );
+  }
+
+  /// Builds itinerary days from real POI data, assigning places to morning /
+  /// afternoon / evening slots based on their OSM category.
+  static List<ItineraryDay> _fromRealPlaces({
+    required String destination,
+    required int numDays,
+    required List<Place> places,
+    required List<TripInterest> interests,
+  }) {
+    // Split places into slot buckets by category
+    final evening = places
+        .where((p) => p.category == 'food' || p.category == 'nightlife')
+        .toList();
+    final daytime = places
+        .where((p) => p.category != 'food' && p.category != 'nightlife')
+        .toList();
+
+    // Ensure we have enough; if daytime is sparse pull from evening
+    while (daytime.length < numDays * 2 && evening.isNotEmpty) {
+      daytime.add(evening.removeLast());
+    }
+
+    final days = <ItineraryDay>[];
+    var dayIdx = 0;
+    var daytimeIdx = 0;
+    var eveningIdx = 0;
+
+    for (var day = 0; day < numDays; day++) {
+      final morningPlace = daytime[daytimeIdx % daytime.length];
+      daytimeIdx++;
+      final afternoonPlace = daytime[daytimeIdx % daytime.length];
+      daytimeIdx++;
+      final eveningPlace = evening.isNotEmpty
+          ? evening[eveningIdx % evening.length]
+          : daytime[daytimeIdx % daytime.length];
+      eveningIdx++;
+
+      final titleIdx = dayIdx % _dayTitles.length;
+      days.add(ItineraryDay(
+        dayNumber: day + 1,
+        title: _d(_dayTitles[titleIdx], destination),
+        activities: [
+          _activityFromPlace(morningPlace, 'morning'),
+          _activityFromPlace(afternoonPlace, 'afternoon'),
+          _activityFromPlace(eveningPlace, 'evening'),
+        ],
+      ));
+      dayIdx++;
+    }
+
+    return days;
+  }
+
+  static Activity _activityFromPlace(Place place, String slot) {
+    final duration = switch (slot) {
+      'morning' => 90,
+      'afternoon' => 120,
+      _ => 90,
+    };
+    return Activity(
+      id: _uuid.v4(),
+      title: place.name,
+      description: place.description.isNotEmpty
+          ? place.description
+          : 'A must-visit spot in the area.',
+      timeSlot: slot,
+      locationName: place.name,
+      latitude: place.lat,
+      longitude: place.lng,
+      category: place.category,
+      estimatedDurationMinutes: duration,
+    );
+  }
+
+  /// Template-based generation that attaches approximate GPS coordinates so
+  /// the TSP optimizer works even before the Places API integration.
+  static List<ItineraryDay> _fromTemplatesWithCoords({
+    required String destination,
+    required int numDays,
+    required BudgetType budget,
+    required List<TripInterest> interests,
+    required double baseLat,
+    required double baseLng,
+  }) {
+    final rng = Random(destination.hashCode);
+
+    double offset() => (rng.nextDouble() - 0.5) * 0.06; // ±~3 km
+
+    final morningPool = _mergePool(interests, 'morning');
+    final afternoonPool = _mergePool(interests, 'afternoon');
+    final eveningPool = _mergePool(interests, 'evening');
+
+    final days = <ItineraryDay>[];
+    for (var day = 0; day < numDays; day++) {
+      final titleIdx = day % _dayTitles.length;
+      days.add(ItineraryDay(
+        dayNumber: day + 1,
+        title: _d(_dayTitles[titleIdx], destination),
+        activities: [
+          _pickWithCoords(morningPool, day, destination, 'morning',
+              baseLat + offset(), baseLng + offset()),
+          _pickWithCoords(afternoonPool, day, destination, 'afternoon',
+              baseLat + offset(), baseLng + offset()),
+          _pickWithCoords(eveningPool, day, destination, 'evening',
+              baseLat + offset(), baseLng + offset()),
+        ],
+      ));
+    }
+    return days;
+  }
+
+  static Activity _pickWithCoords(
+    List<_T> pool,
+    int dayIndex,
+    String dest,
+    String slot,
+    double lat,
+    double lng,
+  ) {
+    final t = pool[dayIndex % pool.length];
+    return Activity(
+      id: _uuid.v4(),
+      title: _d(t.title, dest),
+      description: _d(t.desc, dest),
+      timeSlot: slot,
+      locationName: dest,
+      latitude: lat,
+      longitude: lng,
+      category: slot,
+      estimatedDurationMinutes: t.mins,
+    );
+  }
+
+  // ─── Sync API (template-only, kept for backward compatibility) ─────────────
   static List<ItineraryDay> generate({
     required String destination,
     required int numDays,
