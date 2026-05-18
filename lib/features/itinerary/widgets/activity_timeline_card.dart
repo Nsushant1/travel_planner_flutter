@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../core/constants/app_colors.dart';
-import '../../../data/models/activity.dart';
+import 'package:travel_planner/core/constants/app_colors.dart';
+import 'package:travel_planner/data/models/activity.dart';
 
 class ActivityTimelineCard extends StatelessWidget {
   final Activity activity;
@@ -92,7 +92,8 @@ class ActivityTimelineCard extends StatelessWidget {
                                 size: 13, color: AppColors.textHint),
                             const SizedBox(width: 3),
                             Text(
-                              _formatDuration(activity.estimatedDurationMinutes),
+                              _formatDuration(
+                                  activity.estimatedDurationMinutes),
                               style: const TextStyle(
                                   fontSize: 11, color: AppColors.textHint),
                             ),

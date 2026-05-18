@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/constants/app_colors.dart';
+import 'package:travel_planner/core/constants/app_colors.dart';
 
 class HomeScreen extends StatelessWidget {
   final StatefulNavigationShell navigationShell;
@@ -57,7 +57,8 @@ class HomeFab extends StatelessWidget {
       backgroundColor: AppColors.primary,
       foregroundColor: Colors.white,
       icon: const Icon(Icons.add_rounded),
-      label: const Text('Plan Trip', style: TextStyle(fontWeight: FontWeight.w600)),
+      label: const Text('Plan Trip',
+          style: TextStyle(fontWeight: FontWeight.w600)),
     );
   }
 }

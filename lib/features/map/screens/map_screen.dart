@@ -6,11 +6,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 
-import '../../../core/constants/app_colors.dart';
-import '../../../core/utils/tsp_solver.dart';
-import '../../../data/models/activity.dart';
-import '../../../data/models/itinerary_day.dart';
-import '../../../features/itinerary/providers/itinerary_provider.dart';
+import 'package:travel_planner/core/constants/app_colors.dart';
+import 'package:travel_planner/core/utils/tsp_solver.dart';
+import 'package:travel_planner/data/models/activity.dart';
+import 'package:travel_planner/data/models/itinerary_day.dart';
+import 'package:travel_planner/features/itinerary/providers/itinerary_provider.dart';
 
 class MapScreen extends ConsumerStatefulWidget {
   final String tripId;
@@ -61,9 +61,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final withCoords = acts.where(_hasCoords).toList();
     if (withCoords.length < 2) return acts;
 
-    final points = withCoords
-        .map((a) => (lat: a.latitude, lng: a.longitude))
-        .toList();
+    final points =
+        withCoords.map((a) => (lat: a.latitude, lng: a.longitude)).toList();
     final order = TspSolver.nearestNeighbor(points);
     return order.map((i) => withCoords[i]).toList();
   }
@@ -153,8 +152,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                       width: 44,
                       height: 56,
                       child: GestureDetector(
-                        onTap: () =>
-                            setState(() => _tappedActivity = activity),
+                        onTap: () => setState(() => _tappedActivity = activity),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -342,8 +340,7 @@ class _DaySelector extends StatelessWidget {
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 150),
               margin: const EdgeInsets.only(right: 8),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               decoration: BoxDecoration(
                 color: selected ? AppColors.primary : Colors.white,
                 borderRadius: BorderRadius.circular(20),

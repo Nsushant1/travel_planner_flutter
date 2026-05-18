@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/constants/app_colors.dart';
-import '../../../core/utils/tsp_solver.dart';
-import '../../../data/models/activity.dart';
-import '../../../data/models/itinerary_day.dart';
-import '../../../data/models/trip.dart';
-import '../../itinerary/providers/itinerary_provider.dart';
+import 'package:travel_planner/core/constants/app_colors.dart';
+import 'package:travel_planner/core/utils/tsp_solver.dart';
+import 'package:travel_planner/data/models/activity.dart';
+import 'package:travel_planner/data/models/itinerary_day.dart';
+import 'package:travel_planner/data/models/trip.dart';
+import 'package:travel_planner/features/itinerary/providers/itinerary_provider.dart';
 
 class RouteOptimizationScreen extends ConsumerWidget {
   final String tripId;
@@ -69,8 +69,8 @@ class _AlgorithmBanner extends StatelessWidget {
   final Trip trip;
   const _AlgorithmBanner({required this.trip});
 
-  bool get _hasCoordinates => trip.days.any((d) =>
-      d.activities.any((a) => a.latitude != 0.0 || a.longitude != 0.0));
+  bool get _hasCoordinates => trip.days.any(
+      (d) => d.activities.any((a) => a.latitude != 0.0 || a.longitude != 0.0));
 
   @override
   Widget build(BuildContext context) {
@@ -113,8 +113,7 @@ class _DayTabBar extends StatelessWidget {
       unselectedLabelColor: AppColors.textSecondary,
       indicatorColor: AppColors.primary,
       indicatorWeight: 2.5,
-      labelStyle:
-          const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+      labelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
       unselectedLabelStyle:
           const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
       tabs: days.map((d) => Tab(text: 'Day ${d.dayNumber}')).toList(),
@@ -150,9 +149,8 @@ class _DayRouteViewState extends State<_DayRouteView>
     super.initState();
     final activities = widget.day.activities;
 
-    _points = activities
-        .map((a) => (lat: a.latitude, lng: a.longitude))
-        .toList();
+    _points =
+        activities.map((a) => (lat: a.latitude, lng: a.longitude)).toList();
 
     _originalOrder = List.generate(activities.length, (i) => i);
     _optimizedOrder = TspSolver.nearestNeighbor(_points);
@@ -168,8 +166,7 @@ class _DayRouteViewState extends State<_DayRouteView>
     super.build(context);
     final activities = widget.day.activities;
     final savings = TspSolver.savingsPercent(_originalKm, _optimizedKm);
-    final hasCoords =
-        _points.any((p) => p.lat != 0.0 || p.lng != 0.0);
+    final hasCoords = _points.any((p) => p.lat != 0.0 || p.lng != 0.0);
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
@@ -215,8 +212,10 @@ class _DayRouteViewState extends State<_DayRouteView>
           if (!isLast) {
             final nextIndex = _displayOrder[i + 1];
             legKm = TspSolver.haversineKm(
-              _points[actIndex].lat, _points[actIndex].lng,
-              _points[nextIndex].lat, _points[nextIndex].lng,
+              _points[actIndex].lat,
+              _points[actIndex].lng,
+              _points[nextIndex].lat,
+              _points[nextIndex].lng,
             );
           }
 
@@ -428,7 +427,8 @@ class _ToggleBtn extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 16, color: selected ? color : AppColors.textSecondary),
+            Icon(icon,
+                size: 16, color: selected ? color : AppColors.textSecondary),
             const SizedBox(width: 6),
             Text(
               label,
@@ -586,8 +586,7 @@ class _RouteStopRow extends StatelessWidget {
                             child: Text(
                               activity.locationName,
                               style: const TextStyle(
-                                  fontSize: 12,
-                                  color: AppColors.textSecondary),
+                                  fontSize: 12, color: AppColors.textSecondary),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
@@ -629,8 +628,8 @@ class _SlotBadge extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: TextStyle(
-            fontSize: 10, fontWeight: FontWeight.w600, color: color),
+        style:
+            TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: color),
       ),
     );
   }

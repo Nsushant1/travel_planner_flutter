@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../providers/auth_provider.dart';
-import '../../../core/constants/app_colors.dart';
+import 'package:travel_planner/features/auth/providers/auth_provider.dart';
+import 'package:travel_planner/core/constants/app_colors.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
@@ -157,11 +157,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       textInputAction: TextInputAction.next,
       decoration: InputDecoration(
         labelText: 'Password',
-        prefixIcon: const Icon(Icons.lock_outline, color: AppColors.textSecondary),
+        prefixIcon:
+            const Icon(Icons.lock_outline, color: AppColors.textSecondary),
         suffixIcon: IconButton(
           onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
           icon: Icon(
-            _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+            _obscurePassword
+                ? Icons.visibility_outlined
+                : Icons.visibility_off_outlined,
             color: AppColors.textSecondary,
           ),
         ),
@@ -182,11 +185,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       onFieldSubmitted: (_) => _register(),
       decoration: InputDecoration(
         labelText: 'Confirm password',
-        prefixIcon: const Icon(Icons.lock_outline, color: AppColors.textSecondary),
+        prefixIcon:
+            const Icon(Icons.lock_outline, color: AppColors.textSecondary),
         suffixIcon: IconButton(
           onPressed: () => setState(() => _obscureConfirm = !_obscureConfirm),
           icon: Icon(
-            _obscureConfirm ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+            _obscureConfirm
+                ? Icons.visibility_outlined
+                : Icons.visibility_off_outlined,
             color: AppColors.textSecondary,
           ),
         ),
@@ -229,7 +235,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           ? const SizedBox(
               height: 20,
               width: 20,
-              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+              child: CircularProgressIndicator(
+                  strokeWidth: 2, color: Colors.white),
             )
           : const Text('Create Account'),
     );
@@ -250,7 +257,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             minimumSize: Size.zero,
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
-          child: const Text('Sign In', style: TextStyle(fontWeight: FontWeight.w700)),
+          child: const Text('Sign In',
+              style: TextStyle(fontWeight: FontWeight.w700)),
         ),
       ],
     );

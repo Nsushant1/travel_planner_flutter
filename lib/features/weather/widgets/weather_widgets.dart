@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../core/constants/app_colors.dart';
-import '../../../data/models/weather_data.dart';
+import 'package:travel_planner/core/constants/app_colors.dart';
+import 'package:travel_planner/data/models/weather_data.dart';
 
 // ─── Icon mapping ─────────────────────────────────────────────────────────────
 
@@ -52,8 +52,7 @@ class CurrentWeatherChip extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(20),
-        border:
-            Border.all(color: Colors.white.withValues(alpha: 0.25)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -70,9 +69,7 @@ class CurrentWeatherChip extends StatelessWidget {
           ),
           const SizedBox(width: 4),
           Container(
-              width: 1,
-              height: 10,
-              color: Colors.white.withValues(alpha: 0.3)),
+              width: 1, height: 10, color: Colors.white.withValues(alpha: 0.3)),
           const SizedBox(width: 4),
           Text(
             _capitalize(weather.description),

@@ -84,13 +84,12 @@ class TripCardSkeleton extends StatelessWidget {
         children: [
           // Header area
           ClipRRect(
-            borderRadius:
-                const BorderRadius.vertical(top: Radius.circular(16)),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
             child: ShimmerBox(
               width: double.infinity,
               height: 80,
-              borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(16)),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(16)),
             ),
           ),
           // Info row
@@ -99,11 +98,13 @@ class TripCardSkeleton extends StatelessWidget {
             child: Row(
               children: [
                 ShimmerBox(
-                    width: 72, height: 24,
+                    width: 72,
+                    height: 24,
                     borderRadius: BorderRadius.circular(6)),
                 const SizedBox(width: 8),
                 ShimmerBox(
-                    width: 56, height: 24,
+                    width: 56,
+                    height: 24,
                     borderRadius: BorderRadius.circular(6)),
               ],
             ),
@@ -132,26 +133,26 @@ class TripTileSkeleton extends StatelessWidget {
       child: Row(
         children: [
           ShimmerBox(
-              width: 44, height: 44,
-              borderRadius: BorderRadius.circular(12)),
+              width: 44, height: 44, borderRadius: BorderRadius.circular(12)),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 ShimmerBox(
-                    width: 120, height: 14,
+                    width: 120,
+                    height: 14,
                     borderRadius: BorderRadius.circular(4)),
                 const SizedBox(height: 6),
                 ShimmerBox(
-                    width: 90, height: 11,
+                    width: 90,
+                    height: 11,
                     borderRadius: BorderRadius.circular(4)),
               ],
             ),
           ),
           ShimmerBox(
-              width: 60, height: 22,
-              borderRadius: BorderRadius.circular(6)),
+              width: 60, height: 22, borderRadius: BorderRadius.circular(6)),
         ],
       ),
     );

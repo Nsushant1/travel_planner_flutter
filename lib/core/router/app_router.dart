@@ -2,22 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../core/utils/onboarding_notifier.dart';
-import '../../features/auth/providers/auth_provider.dart';
-import '../../features/auth/screens/splash_screen.dart';
-import '../../features/auth/screens/login_screen.dart';
-import '../../features/auth/screens/register_screen.dart';
-import '../../features/home/screens/home_screen.dart';
-import '../../features/home/screens/home_dashboard_screen.dart';
-import '../../features/explore/screens/explore_screen.dart';
-import '../../features/saved_trips/screens/saved_trips_screen.dart';
-import '../../features/profile/screens/profile_screen.dart';
-import '../../features/trip_setup/screens/trip_setup_screen.dart';
-import '../../features/itinerary/screens/itinerary_screen.dart';
-import '../../features/route_optimization/screens/route_optimization_screen.dart';
-import '../../features/map/screens/map_screen.dart';
-import '../../features/place_details/screens/place_details_screen.dart';
-import '../../features/onboarding/screens/onboarding_screen.dart';
+import 'package:travel_planner/core/utils/onboarding_notifier.dart';
+import 'package:travel_planner/features/auth/providers/auth_provider.dart';
+import 'package:travel_planner/features/auth/screens/splash_screen.dart';
+import 'package:travel_planner/features/auth/screens/login_screen.dart';
+import 'package:travel_planner/features/auth/screens/register_screen.dart';
+import 'package:travel_planner/features/home/screens/home_screen.dart';
+import 'package:travel_planner/features/home/screens/home_dashboard_screen.dart';
+import 'package:travel_planner/features/explore/screens/explore_screen.dart';
+import 'package:travel_planner/features/saved_trips/screens/saved_trips_screen.dart';
+import 'package:travel_planner/features/profile/screens/profile_screen.dart';
+import 'package:travel_planner/features/trip_setup/screens/trip_setup_screen.dart';
+import 'package:travel_planner/features/itinerary/screens/itinerary_screen.dart';
+import 'package:travel_planner/features/route_optimization/screens/route_optimization_screen.dart';
+import 'package:travel_planner/features/map/screens/map_screen.dart';
+import 'package:travel_planner/features/place_details/screens/place_details_screen.dart';
+import 'package:travel_planner/features/onboarding/screens/onboarding_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   // ref.read — we only need the notifier *object* for refreshListenable.
@@ -73,7 +73,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       final onAuthScreen = path == '/login' || path == '/register';
 
       if (!isAuthenticated && !onAuthScreen) return '/login';
-      if (isAuthenticated && (onAuthScreen || path == '/splash')) return '/home';
+      if (isAuthenticated && (onAuthScreen || path == '/splash')) {
+        return '/home';
+      }
 
       return null;
     },

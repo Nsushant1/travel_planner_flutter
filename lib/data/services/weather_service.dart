@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/config/app_config.dart';
-import '../models/weather_data.dart';
+import 'package:travel_planner/core/config/app_config.dart';
+import 'package:travel_planner/data/models/weather_data.dart';
 
 class WeatherService {
   static const _base = 'https://api.openweathermap.org/data/2.5';
@@ -40,8 +40,7 @@ class WeatherService {
         iconCode: current['weather'][0]['icon'] as String,
         humidity: current['main']['humidity'] as int,
         windSpeed: (current['wind']['speed'] as num).toDouble(),
-        forecast: _parseForecast(
-            forecastRaw['list'] as List<dynamic>, numDays),
+        forecast: _parseForecast(forecastRaw['list'] as List<dynamic>, numDays),
       );
     } on DioException catch (e) {
       if (e.response?.statusCode == 404) return null; // city not found
@@ -63,7 +62,8 @@ class WeatherService {
       final slots = e.value;
       final temps =
           slots.map((s) => (s['main']['temp'] as num).toDouble()).toList();
-      final humidities = slots.map((s) => s['main']['humidity'] as int).toList();
+      final humidities =
+          slots.map((s) => s['main']['humidity'] as int).toList();
       final winds =
           slots.map((s) => (s['wind']['speed'] as num).toDouble()).toList();
 
@@ -81,8 +81,7 @@ class WeatherService {
         iconCode: midday['weather'][0]['icon'] as String,
         humidity:
             (humidities.reduce((a, b) => a + b) / humidities.length).round(),
-        windSpeed:
-            winds.reduce((a, b) => a + b) / winds.length,
+        windSpeed: winds.reduce((a, b) => a + b) / winds.length,
       );
     }).toList();
   }

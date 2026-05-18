@@ -1,8 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
-import '../models/place.dart';
-import '../models/trip.dart';
+import 'package:travel_planner/data/models/place.dart';
+import 'package:travel_planner/data/models/trip.dart';
 
 const _uuid = Uuid();
 
@@ -126,29 +126,39 @@ class PlacesService {
     final around = 'around:$radius,$lat,$lng';
 
     // Always fetch tourism & historic attractions
-    buf.write('  node[tourism~"museum|gallery|attraction|monument|castle|viewpoint|zoo|aquarium|theme_park"][$around];\n');
-    buf.write('  way[tourism~"museum|gallery|attraction|monument|castle|viewpoint"][$around];\n');
-    buf.write('  node[historic~"monument|castle|ruins|archaeological_site|memorial|mosque|church|temple"][$around];\n');
+    buf.write(
+        '  node[tourism~"museum|gallery|attraction|monument|castle|viewpoint|zoo|aquarium|theme_park"][$around];\n');
+    buf.write(
+        '  way[tourism~"museum|gallery|attraction|monument|castle|viewpoint"][$around];\n');
+    buf.write(
+        '  node[historic~"monument|castle|ruins|archaeological_site|memorial|mosque|church|temple"][$around];\n');
 
-    if (interests.contains(TripInterest.food) || interests.contains(TripInterest.nightlife)) {
-      buf.write('  node[amenity~"restaurant|cafe|bar|food_court|fast_food"][$around];\n');
+    if (interests.contains(TripInterest.food) ||
+        interests.contains(TripInterest.nightlife)) {
+      buf.write(
+          '  node[amenity~"restaurant|cafe|bar|food_court|fast_food"][$around];\n');
       buf.write('  node[amenity~"nightclub|pub|brewery"][$around];\n');
     }
 
-    if (interests.contains(TripInterest.nature) || interests.contains(TripInterest.adventure)) {
-      buf.write('  node[natural~"peak|waterfall|spring|cave_entrance|beach|cliff"][$around];\n');
+    if (interests.contains(TripInterest.nature) ||
+        interests.contains(TripInterest.adventure)) {
+      buf.write(
+          '  node[natural~"peak|waterfall|spring|cave_entrance|beach|cliff"][$around];\n');
       buf.write('  node[leisure~"nature_reserve|park|garden"][$around];\n');
       buf.write('  way[leisure~"nature_reserve|park|garden"][$around];\n');
     }
 
     if (interests.contains(TripInterest.shopping)) {
-      buf.write('  node[shop~"mall|market|department_store|souvenir"][$around];\n');
+      buf.write(
+          '  node[shop~"mall|market|department_store|souvenir"][$around];\n');
       buf.write('  node[amenity~"marketplace"][$around];\n');
     }
 
     if (interests.contains(TripInterest.wellness)) {
-      buf.write('  node[amenity~"spa|massage|swimming_pool|sauna"][$around];\n');
-      buf.write('  node[leisure~"spa|fitness_centre|swimming_pool"][$around];\n');
+      buf.write(
+          '  node[amenity~"spa|massage|swimming_pool|sauna"][$around];\n');
+      buf.write(
+          '  node[leisure~"spa|fitness_centre|swimming_pool"][$around];\n');
     }
 
     buf.write(');\nout center 150;\n');
@@ -192,16 +202,27 @@ class PlacesService {
     final natural = tags['natural'] as String? ?? '';
     final shop = tags['shop'] as String? ?? '';
 
-    if (amenity == 'restaurant' || amenity == 'cafe' || amenity == 'fast_food' || amenity == 'food_court') {
+    if (amenity == 'restaurant' ||
+        amenity == 'cafe' ||
+        amenity == 'fast_food' ||
+        amenity == 'food_court') {
       return 'food';
     }
-    if (amenity == 'bar' || amenity == 'nightclub' || amenity == 'pub' || amenity == 'brewery') {
+    if (amenity == 'bar' ||
+        amenity == 'nightclub' ||
+        amenity == 'pub' ||
+        amenity == 'brewery') {
       return 'nightlife';
     }
     if (natural.isNotEmpty) return 'nature';
-    if (leisure == 'nature_reserve' || leisure == 'park' || leisure == 'garden') return 'nature';
+    if (leisure == 'nature_reserve' || leisure == 'park' || leisure == 'garden') {
+      return 'nature';
+    }
     if (shop.isNotEmpty || amenity == 'marketplace') return 'shopping';
-    if (leisure == 'spa' || amenity == 'spa' || amenity == 'massage' || amenity == 'swimming_pool') {
+    if (leisure == 'spa' ||
+        amenity == 'spa' ||
+        amenity == 'massage' ||
+        amenity == 'swimming_pool') {
       return 'wellness';
     }
     if (tourism == 'viewpoint' || tourism == 'attraction') return 'culture';

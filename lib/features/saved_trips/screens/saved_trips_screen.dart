@@ -3,11 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
-import '../../../core/constants/app_colors.dart';
-import '../../../core/widgets/shimmer.dart';
-import '../../../data/models/trip.dart';
-import '../../itinerary/providers/itinerary_provider.dart';
-import '../providers/saved_trips_provider.dart';
+import 'package:travel_planner/core/constants/app_colors.dart';
+import 'package:travel_planner/core/widgets/shimmer.dart';
+import 'package:travel_planner/data/models/trip.dart';
+import 'package:travel_planner/features/itinerary/providers/itinerary_provider.dart';
+import 'package:travel_planner/features/saved_trips/providers/saved_trips_provider.dart';
 
 class SavedTripsScreen extends ConsumerWidget {
   const SavedTripsScreen({super.key});
@@ -53,9 +53,8 @@ class SavedTripsScreen extends ConsumerWidget {
       body: tripsAsync.when(
         loading: () => const _SkeletonList(),
         error: (e, _) => _ErrorState(message: e.toString()),
-        data: (trips) => trips.isEmpty
-            ? const _EmptyState()
-            : _TripList(trips: trips),
+        data: (trips) =>
+            trips.isEmpty ? const _EmptyState() : _TripList(trips: trips),
       ),
     );
   }
@@ -121,8 +120,8 @@ class _TripCard extends ConsumerWidget {
           context: context,
           builder: (ctx) => AlertDialog(
             title: const Text('Delete trip?'),
-            content: Text(
-                'Remove "${trip.destination}" from your saved trips?'),
+            content:
+                Text('Remove "${trip.destination}" from your saved trips?'),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx, false),
@@ -130,8 +129,7 @@ class _TripCard extends ConsumerWidget {
               ),
               TextButton(
                 onPressed: () => Navigator.pop(ctx, true),
-                style: TextButton.styleFrom(
-                    foregroundColor: AppColors.error),
+                style: TextButton.styleFrom(foregroundColor: AppColors.error),
                 child: const Text('Delete'),
               ),
             ],
@@ -181,8 +179,8 @@ class _TripCard extends ConsumerWidget {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
-                  borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(16)),
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(16)),
                 ),
                 child: Stack(
                   children: [
@@ -309,8 +307,7 @@ class _EmptyState extends StatelessWidget {
             const SizedBox(height: 8),
             const Text(
               'Plan a trip and tap the bookmark icon to save it here.',
-              style:
-                  TextStyle(fontSize: 13, color: AppColors.textSecondary),
+              style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 28),
@@ -350,8 +347,7 @@ class _ErrorState extends StatelessWidget {
                     color: AppColors.textSecondary)),
             const SizedBox(height: 6),
             Text(message,
-                style: const TextStyle(
-                    fontSize: 12, color: AppColors.textHint),
+                style: const TextStyle(fontSize: 12, color: AppColors.textHint),
                 textAlign: TextAlign.center),
           ],
         ),

@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import '../../../core/constants/app_colors.dart';
-import '../../../core/widgets/shimmer.dart';
-import '../../../data/models/trip.dart';
-import '../../auth/providers/auth_provider.dart';
-import '../../itinerary/providers/itinerary_provider.dart';
-import '../../saved_trips/providers/saved_trips_provider.dart';
+import 'package:travel_planner/core/constants/app_colors.dart';
+import 'package:travel_planner/core/widgets/shimmer.dart';
+import 'package:travel_planner/data/models/trip.dart';
+import 'package:travel_planner/features/auth/providers/auth_provider.dart';
+import 'package:travel_planner/features/itinerary/providers/itinerary_provider.dart';
+import 'package:travel_planner/features/saved_trips/providers/saved_trips_provider.dart';
 
 class HomeDashboardScreen extends ConsumerWidget {
   const HomeDashboardScreen({super.key});
@@ -15,9 +15,9 @@ class HomeDashboardScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authStateProvider);
-    final firstName = authState.displayName?.split(' ').first
-        ?? authState.email?.split('@').first
-        ?? 'Traveler';
+    final firstName = authState.displayName?.split(' ').first ??
+        authState.email?.split('@').first ??
+        'Traveler';
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -55,14 +55,16 @@ class HomeDashboardScreen extends ConsumerWidget {
                 const SizedBox(height: 2),
                 const Text(
                   'Where are you going next?',
-                  style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+                  style:
+                      TextStyle(fontSize: 14, color: AppColors.textSecondary),
                 ),
               ],
             ),
             CircleAvatar(
               radius: 22,
               backgroundColor: AppColors.primaryLight.withValues(alpha: 0.15),
-              child: const Icon(Icons.person_outline, color: AppColors.primary, size: 24),
+              child: const Icon(Icons.person_outline,
+                  color: AppColors.primary, size: 24),
             ),
           ],
         ),

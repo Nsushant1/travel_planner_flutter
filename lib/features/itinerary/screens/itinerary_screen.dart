@@ -2,15 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import '../../../core/constants/app_colors.dart';
-import '../../../data/models/trip.dart';
-import '../../../data/models/itinerary_day.dart';
-import '../../../data/models/weather_data.dart';
-import '../providers/itinerary_provider.dart';
-import '../widgets/activity_timeline_card.dart';
-import '../../weather/providers/weather_provider.dart';
-import '../../weather/widgets/weather_widgets.dart';
-import '../../saved_trips/providers/saved_trips_provider.dart';
+import 'package:travel_planner/core/constants/app_colors.dart';
+import 'package:travel_planner/data/models/trip.dart';
+import 'package:travel_planner/data/models/itinerary_day.dart';
+import 'package:travel_planner/data/models/weather_data.dart';
+import 'package:travel_planner/features/itinerary/providers/itinerary_provider.dart';
+import 'package:travel_planner/features/itinerary/widgets/activity_timeline_card.dart';
+import 'package:travel_planner/features/weather/providers/weather_provider.dart';
+import 'package:travel_planner/features/weather/widgets/weather_widgets.dart';
+import 'package:travel_planner/features/saved_trips/providers/saved_trips_provider.dart';
 
 class ItineraryScreen extends ConsumerWidget {
   final String tripId;
@@ -148,11 +148,14 @@ class _TripSliverAppBar extends ConsumerWidget {
         Consumer(
           builder: (context, ref, _) {
             final isSaved = ref.watch(savedTripsProvider).whenOrNull(
-                  data: (list) => list.any((t) => t.id == trip.id),
-                ) ?? false;
+                      data: (list) => list.any((t) => t.id == trip.id),
+                    ) ??
+                false;
             return IconButton(
               icon: Icon(
-                isSaved ? Icons.bookmark_rounded : Icons.bookmark_outline_rounded,
+                isSaved
+                    ? Icons.bookmark_rounded
+                    : Icons.bookmark_outline_rounded,
                 color: isSaved ? AppColors.secondary : Colors.white,
               ),
               tooltip: isSaved ? 'Saved' : 'Save trip',

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../providers/auth_provider.dart';
-import '../../../core/constants/app_colors.dart';
+import 'package:travel_planner/features/auth/providers/auth_provider.dart';
+import 'package:travel_planner/core/constants/app_colors.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -62,8 +62,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 const SizedBox(height: 12),
                 _buildForgotPassword(),
                 const SizedBox(height: 32),
-                if (authState.errorMessage != null) _buildBanner(authState.errorMessage!, isError: true),
-                if (authState.infoMessage != null) _buildBanner(authState.infoMessage!, isError: false),
+                if (authState.errorMessage != null)
+                  _buildBanner(authState.errorMessage!, isError: true),
+                if (authState.infoMessage != null)
+                  _buildBanner(authState.infoMessage!, isError: false),
                 _buildLoginButton(authState.isLoading),
                 const SizedBox(height: 24),
                 _buildRegisterLink(),
@@ -86,7 +88,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             color: AppColors.primary,
             borderRadius: BorderRadius.circular(16),
           ),
-          child: const Icon(Icons.flight_takeoff_rounded, color: Colors.white, size: 30),
+          child: const Icon(Icons.flight_takeoff_rounded,
+              color: Colors.white, size: 30),
         ),
         const SizedBox(height: 24),
         const Text(
@@ -132,11 +135,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       onFieldSubmitted: (_) => _login(),
       decoration: InputDecoration(
         labelText: 'Password',
-        prefixIcon: const Icon(Icons.lock_outline, color: AppColors.textSecondary),
+        prefixIcon:
+            const Icon(Icons.lock_outline, color: AppColors.textSecondary),
         suffixIcon: IconButton(
           onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
           icon: Icon(
-            _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+            _obscurePassword
+                ? Icons.visibility_outlined
+                : Icons.visibility_off_outlined,
             color: AppColors.textSecondary,
           ),
         ),
@@ -189,7 +195,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           ? const SizedBox(
               height: 20,
               width: 20,
-              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+              child: CircularProgressIndicator(
+                  strokeWidth: 2, color: Colors.white),
             )
           : const Text('Sign In'),
     );
@@ -210,7 +217,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             minimumSize: Size.zero,
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
-          child: const Text('Sign Up', style: TextStyle(fontWeight: FontWeight.w700)),
+          child: const Text('Sign Up',
+              style: TextStyle(fontWeight: FontWeight.w700)),
         ),
       ],
     );

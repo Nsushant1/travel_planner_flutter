@@ -3,9 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/constants/app_colors.dart';
-import '../../../data/models/activity.dart';
-import '../../../features/itinerary/providers/itinerary_provider.dart';
+import 'package:travel_planner/core/constants/app_colors.dart';
+import 'package:travel_planner/data/models/activity.dart';
+import 'package:travel_planner/features/itinerary/providers/itinerary_provider.dart';
 
 class PlaceDetailsScreen extends ConsumerWidget {
   final String placeId;
@@ -102,7 +102,8 @@ class PlaceDetailsScreen extends ConsumerWidget {
                       _InfoRow(
                         icon: Icons.schedule_rounded,
                         label: 'Duration',
-                        value: _formatDuration(activity.estimatedDurationMinutes),
+                        value:
+                            _formatDuration(activity.estimatedDurationMinutes),
                         color: meta.color,
                       ),
                       _InfoRow(
@@ -125,7 +126,8 @@ class PlaceDetailsScreen extends ConsumerWidget {
                             ));
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
-                                content: Text('Coordinates copied to clipboard'),
+                                content:
+                                    Text('Coordinates copied to clipboard'),
                                 duration: Duration(seconds: 2),
                               ),
                             );

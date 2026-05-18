@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../models/itinerary_day.dart';
-import '../models/trip.dart';
+import 'package:travel_planner/data/models/itinerary_day.dart';
+import 'package:travel_planner/data/models/trip.dart';
 
 // Required Supabase SQL (run once in Dashboard → SQL Editor):
 //

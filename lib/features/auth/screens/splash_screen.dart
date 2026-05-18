@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../core/constants/app_colors.dart';
+import 'package:travel_planner/core/constants/app_colors.dart';
 
 // Navigation away from splash is handled entirely by GoRouter's redirect.
 // No local ref.listen needed — that caused a double-navigation race condition.

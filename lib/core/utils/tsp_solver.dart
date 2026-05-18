@@ -12,8 +12,10 @@ class TspSolver {
 
   /// Great-circle distance in km between two GPS points (Haversine formula).
   static double haversineKm(
-    double lat1, double lng1,
-    double lat2, double lng2,
+    double lat1,
+    double lng1,
+    double lat2,
+    double lng2,
   ) {
     final dLat = _rad(lat2 - lat1);
     final dLng = _rad(lng2 - lng1);
@@ -47,8 +49,10 @@ class TspSolver {
       for (var i = 0; i < n; i++) {
         if (visited[i]) continue;
         final d = haversineKm(
-          points[current].lat, points[current].lng,
-          points[i].lat, points[i].lng,
+          points[current].lat,
+          points[current].lng,
+          points[i].lat,
+          points[i].lng,
         );
         if (d < minDist) {
           minDist = d;
@@ -75,8 +79,10 @@ class TspSolver {
     var total = 0.0;
     for (var i = 0; i < order.length - 1; i++) {
       total += haversineKm(
-        points[order[i]].lat, points[order[i]].lng,
-        points[order[i + 1]].lat, points[order[i + 1]].lng,
+        points[order[i]].lat,
+        points[order[i]].lng,
+        points[order[i + 1]].lat,
+        points[order[i + 1]].lng,
       );
     }
     return total;

@@ -2,7 +2,15 @@ import 'itinerary_day.dart';
 
 enum BudgetType { low, medium, high }
 
-enum TripInterest { adventure, food, culture, nature, shopping, nightlife, wellness }
+enum TripInterest {
+  adventure,
+  food,
+  culture,
+  nature,
+  shopping,
+  nightlife,
+  wellness
+}
 
 class Trip {
   final String id;

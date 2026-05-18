@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/constants/app_colors.dart';
-import '../../auth/providers/auth_provider.dart';
-import '../../saved_trips/providers/saved_trips_provider.dart';
+import 'package:travel_planner/core/constants/app_colors.dart';
+import 'package:travel_planner/features/auth/providers/auth_provider.dart';
+import 'package:travel_planner/features/saved_trips/providers/saved_trips_provider.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -15,18 +15,14 @@ class ProfileScreen extends ConsumerWidget {
     final tripsAsync = ref.watch(savedTripsProvider);
 
     final email = authState.email ?? '';
-    final displayName =
-        authState.displayName ?? email.split('@').first;
+    final displayName = authState.displayName ?? email.split('@').first;
     final initials = _initials(displayName);
     final tripCount = tripsAsync.valueOrNull?.length ?? 0;
-    final totalDays = tripsAsync.valueOrNull
-            ?.fold<int>(0, (sum, t) => sum + t.totalDays) ??
-        0;
-    final destinations = tripsAsync.valueOrNull
-            ?.map((t) => t.destination)
-            .toSet()
-            .length ??
-        0;
+    final totalDays =
+        tripsAsync.valueOrNull?.fold<int>(0, (sum, t) => sum + t.totalDays) ??
+            0;
+    final destinations =
+        tripsAsync.valueOrNull?.map((t) => t.destination).toSet().length ?? 0;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -55,8 +51,7 @@ class ProfileScreen extends ConsumerWidget {
                       const SizedBox(height: 16),
                       CircleAvatar(
                         radius: 40,
-                        backgroundColor:
-                            Colors.white.withValues(alpha: 0.2),
+                        backgroundColor: Colors.white.withValues(alpha: 0.2),
                         child: Text(
                           initials,
                           style: const TextStyle(
@@ -159,21 +154,16 @@ class ProfileScreen extends ConsumerWidget {
                     width: double.infinity,
                     child: OutlinedButton.icon(
                       onPressed: () async {
-                        await ref
-                            .read(authNotifierProvider)
-                            .signOut();
+                        await ref.read(authNotifierProvider).signOut();
                         if (context.mounted) context.go('/login');
                       },
                       icon: const Icon(Icons.logout_rounded,
                           color: AppColors.error),
                       label: const Text('Sign Out',
-                          style:
-                              TextStyle(color: AppColors.error)),
+                          style: TextStyle(color: AppColors.error)),
                       style: OutlinedButton.styleFrom(
-                        side:
-                            const BorderSide(color: AppColors.error),
-                        padding:
-                            const EdgeInsets.symmetric(vertical: 14),
+                        side: const BorderSide(color: AppColors.error),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -227,9 +217,7 @@ class _StatCard extends StatelessWidget {
             const SizedBox(height: 6),
             Text(value,
                 style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                    color: color)),
+                    fontSize: 20, fontWeight: FontWeight.w800, color: color)),
             const SizedBox(height: 2),
             Text(label,
                 style: const TextStyle(
@@ -284,8 +272,7 @@ class _InfoCard extends StatelessWidget {
             children: [
               e.value,
               if (!isLast)
-                const Divider(
-                    height: 1, indent: 48, color: AppColors.divider),
+                const Divider(height: 1, indent: 48, color: AppColors.divider),
             ],
           );
         }).toList(),
@@ -298,8 +285,7 @@ class _Tile extends StatelessWidget {
   final IconData icon;
   final String label;
   final String value;
-  const _Tile(
-      {required this.icon, required this.label, required this.value});
+  const _Tile({required this.icon, required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {

@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import '../../../core/constants/app_colors.dart';
-import '../../../data/models/trip.dart';
-import '../../itinerary/providers/itinerary_provider.dart';
-import '../providers/trip_setup_provider.dart';
+import 'package:travel_planner/core/constants/app_colors.dart';
+import 'package:travel_planner/data/models/trip.dart';
+import 'package:travel_planner/features/itinerary/providers/itinerary_provider.dart';
+import 'package:travel_planner/features/trip_setup/providers/trip_setup_provider.dart';
 
 class TripSetupScreen extends ConsumerWidget {
   const TripSetupScreen({super.key});
@@ -66,7 +66,8 @@ class _DestinationField extends StatelessWidget {
           textCapitalization: TextCapitalization.words,
           decoration: const InputDecoration(
             hintText: 'e.g. Paris, Bali, New York',
-            prefixIcon: Icon(Icons.location_on_outlined, color: AppColors.primary),
+            prefixIcon:
+                Icon(Icons.location_on_outlined, color: AppColors.primary),
           ),
         ),
       ],
@@ -212,8 +213,7 @@ class _StepperButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(8),
         ),
         child: Icon(icon,
-            size: 18,
-            color: enabled ? Colors.white : AppColors.textHint),
+            size: 18, color: enabled ? Colors.white : AppColors.textHint),
       ),
     );
   }
@@ -294,9 +294,7 @@ class _BudgetCard extends StatelessWidget {
           duration: const Duration(milliseconds: 150),
           padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
           decoration: BoxDecoration(
-            color: selected
-                ? color.withValues(alpha: 0.1)
-                : AppColors.surface,
+            color: selected ? color.withValues(alpha: 0.1) : AppColors.surface,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
               color: selected ? color : AppColors.divider,
@@ -305,7 +303,8 @@ class _BudgetCard extends StatelessWidget {
           ),
           child: Column(
             children: [
-              Icon(icon, color: selected ? color : AppColors.textSecondary, size: 26),
+              Icon(icon,
+                  color: selected ? color : AppColors.textSecondary, size: 26),
               const SizedBox(height: 6),
               Text(
                 label,
@@ -339,13 +338,37 @@ class _InterestsSection extends StatelessWidget {
   const _InterestsSection({required this.notifier, required this.state});
 
   static const _interests = [
-    (interest: TripInterest.adventure, label: 'Adventure', icon: Icons.terrain_rounded),
-    (interest: TripInterest.food, label: 'Food', icon: Icons.restaurant_rounded),
-    (interest: TripInterest.culture, label: 'Culture', icon: Icons.account_balance_rounded),
+    (
+      interest: TripInterest.adventure,
+      label: 'Adventure',
+      icon: Icons.terrain_rounded
+    ),
+    (
+      interest: TripInterest.food,
+      label: 'Food',
+      icon: Icons.restaurant_rounded
+    ),
+    (
+      interest: TripInterest.culture,
+      label: 'Culture',
+      icon: Icons.account_balance_rounded
+    ),
     (interest: TripInterest.nature, label: 'Nature', icon: Icons.park_rounded),
-    (interest: TripInterest.shopping, label: 'Shopping', icon: Icons.shopping_bag_outlined),
-    (interest: TripInterest.nightlife, label: 'Nightlife', icon: Icons.nightlife_rounded),
-    (interest: TripInterest.wellness, label: 'Wellness', icon: Icons.self_improvement_rounded),
+    (
+      interest: TripInterest.shopping,
+      label: 'Shopping',
+      icon: Icons.shopping_bag_outlined
+    ),
+    (
+      interest: TripInterest.nightlife,
+      label: 'Nightlife',
+      icon: Icons.nightlife_rounded
+    ),
+    (
+      interest: TripInterest.wellness,
+      label: 'Wellness',
+      icon: Icons.self_improvement_rounded
+    ),
   ];
 
   @override
@@ -446,9 +469,8 @@ class _GenerateButton extends ConsumerWidget {
         ElevatedButton.icon(
           onPressed: state.isValid
               ? () async {
-                  final trip = await ref
-                      .read(tripSetupProvider.notifier)
-                      .generateTrip();
+                  final trip =
+                      await ref.read(tripSetupProvider.notifier).generateTrip();
                   if (!context.mounted) return;
                   ref.read(currentTripProvider.notifier).state = trip;
                   context.push('/itinerary/${trip.id}');

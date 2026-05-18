@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/constants/app_colors.dart';
-import '../../../data/models/trip.dart';
-import '../../trip_setup/providers/trip_setup_provider.dart';
+import 'package:travel_planner/core/constants/app_colors.dart';
+import 'package:travel_planner/data/models/trip.dart';
+import 'package:travel_planner/features/trip_setup/providers/trip_setup_provider.dart';
 
 // ─── Destination data ─────────────────────────────────────────────────────────
 
@@ -12,7 +12,8 @@ class _Destination {
   final String name;
   final String country;
   final String tagline;
-  final String category; // beach | city | mountain | culture | adventure | nature
+  final String
+      category; // beach | city | mountain | culture | adventure | nature
   final List<TripInterest> interests;
   final Color color;
   final Color colorDark;
@@ -32,147 +33,296 @@ class _Destination {
 
 const _destinations = <_Destination>[
   _Destination(
-    name: 'Paris', country: 'France', tagline: 'City of Light & Art',
-    category: 'city', interests: [TripInterest.culture, TripInterest.food],
-    color: Color(0xFF7C3AED), colorDark: Color(0xFF5B21B6),
+    name: 'Paris',
+    country: 'France',
+    tagline: 'City of Light & Art',
+    category: 'city',
+    interests: [TripInterest.culture, TripInterest.food],
+    color: Color(0xFF7C3AED),
+    colorDark: Color(0xFF5B21B6),
     icon: Icons.account_balance_rounded,
   ),
   _Destination(
-    name: 'Bali', country: 'Indonesia', tagline: 'Island of the Gods',
-    category: 'beach', interests: [TripInterest.nature, TripInterest.wellness, TripInterest.culture],
-    color: Color(0xFF0891B2), colorDark: Color(0xFF0E7490),
+    name: 'Bali',
+    country: 'Indonesia',
+    tagline: 'Island of the Gods',
+    category: 'beach',
+    interests: [
+      TripInterest.nature,
+      TripInterest.wellness,
+      TripInterest.culture
+    ],
+    color: Color(0xFF0891B2),
+    colorDark: Color(0xFF0E7490),
     icon: Icons.beach_access_rounded,
   ),
   _Destination(
-    name: 'Tokyo', country: 'Japan', tagline: 'Tradition meets the future',
-    category: 'city', interests: [TripInterest.culture, TripInterest.food, TripInterest.shopping],
-    color: Color(0xFFDB2777), colorDark: Color(0xFFBE185D),
+    name: 'Tokyo',
+    country: 'Japan',
+    tagline: 'Tradition meets the future',
+    category: 'city',
+    interests: [TripInterest.culture, TripInterest.food, TripInterest.shopping],
+    color: Color(0xFFDB2777),
+    colorDark: Color(0xFFBE185D),
     icon: Icons.location_city_rounded,
   ),
   _Destination(
-    name: 'Kathmandu', country: 'Nepal', tagline: 'Gateway to the Himalayas',
-    category: 'mountain', interests: [TripInterest.adventure, TripInterest.culture, TripInterest.nature],
-    color: Color(0xFF059669), colorDark: Color(0xFF047857),
+    name: 'Kathmandu',
+    country: 'Nepal',
+    tagline: 'Gateway to the Himalayas',
+    category: 'mountain',
+    interests: [
+      TripInterest.adventure,
+      TripInterest.culture,
+      TripInterest.nature
+    ],
+    color: Color(0xFF059669),
+    colorDark: Color(0xFF047857),
     icon: Icons.terrain_rounded,
   ),
   _Destination(
-    name: 'Santorini', country: 'Greece', tagline: 'Whitewashed cliffs & sunsets',
-    category: 'beach', interests: [TripInterest.nature, TripInterest.food, TripInterest.wellness],
-    color: Color(0xFF0369A1), colorDark: Color(0xFF075985),
+    name: 'Santorini',
+    country: 'Greece',
+    tagline: 'Whitewashed cliffs & sunsets',
+    category: 'beach',
+    interests: [TripInterest.nature, TripInterest.food, TripInterest.wellness],
+    color: Color(0xFF0369A1),
+    colorDark: Color(0xFF075985),
     icon: Icons.wb_sunny_rounded,
   ),
   _Destination(
-    name: 'Bangkok', country: 'Thailand', tagline: 'Street food & temples',
-    category: 'city', interests: [TripInterest.food, TripInterest.culture, TripInterest.nightlife],
-    color: Color(0xFFD97706), colorDark: Color(0xFFB45309),
+    name: 'Bangkok',
+    country: 'Thailand',
+    tagline: 'Street food & temples',
+    category: 'city',
+    interests: [
+      TripInterest.food,
+      TripInterest.culture,
+      TripInterest.nightlife
+    ],
+    color: Color(0xFFD97706),
+    colorDark: Color(0xFFB45309),
     icon: Icons.restaurant_rounded,
   ),
   _Destination(
-    name: 'Cape Town', country: 'South Africa', tagline: 'Mountains meet the ocean',
-    category: 'adventure', interests: [TripInterest.adventure, TripInterest.nature, TripInterest.food],
-    color: Color(0xFFEA580C), colorDark: Color(0xFFC2410C),
+    name: 'Cape Town',
+    country: 'South Africa',
+    tagline: 'Mountains meet the ocean',
+    category: 'adventure',
+    interests: [TripInterest.adventure, TripInterest.nature, TripInterest.food],
+    color: Color(0xFFEA580C),
+    colorDark: Color(0xFFC2410C),
     icon: Icons.landscape_rounded,
   ),
   _Destination(
-    name: 'Kyoto', country: 'Japan', tagline: 'Ancient temples & zen gardens',
-    category: 'culture', interests: [TripInterest.culture, TripInterest.nature, TripInterest.wellness],
-    color: Color(0xFF7C3AED), colorDark: Color(0xFF5B21B6),
+    name: 'Kyoto',
+    country: 'Japan',
+    tagline: 'Ancient temples & zen gardens',
+    category: 'culture',
+    interests: [
+      TripInterest.culture,
+      TripInterest.nature,
+      TripInterest.wellness
+    ],
+    color: Color(0xFF7C3AED),
+    colorDark: Color(0xFF5B21B6),
     icon: Icons.temple_buddhist_rounded,
   ),
   _Destination(
-    name: 'Marrakech', country: 'Morocco', tagline: 'Souks & desert adventures',
-    category: 'culture', interests: [TripInterest.culture, TripInterest.shopping, TripInterest.food],
-    color: Color(0xFFB45309), colorDark: Color(0xFF92400E),
+    name: 'Marrakech',
+    country: 'Morocco',
+    tagline: 'Souks & desert adventures',
+    category: 'culture',
+    interests: [TripInterest.culture, TripInterest.shopping, TripInterest.food],
+    color: Color(0xFFB45309),
+    colorDark: Color(0xFF92400E),
     icon: Icons.mosque_rounded,
   ),
   _Destination(
-    name: 'New York', country: 'USA', tagline: 'The city that never sleeps',
-    category: 'city', interests: [TripInterest.culture, TripInterest.food, TripInterest.nightlife, TripInterest.shopping],
-    color: Color(0xFF1D4ED8), colorDark: Color(0xFF1E40AF),
+    name: 'New York',
+    country: 'USA',
+    tagline: 'The city that never sleeps',
+    category: 'city',
+    interests: [
+      TripInterest.culture,
+      TripInterest.food,
+      TripInterest.nightlife,
+      TripInterest.shopping
+    ],
+    color: Color(0xFF1D4ED8),
+    colorDark: Color(0xFF1E40AF),
     icon: Icons.apartment_rounded,
   ),
   _Destination(
-    name: 'Queenstown', country: 'New Zealand', tagline: 'Adventure capital of the world',
-    category: 'adventure', interests: [TripInterest.adventure, TripInterest.nature],
-    color: Color(0xFF16A34A), colorDark: Color(0xFF15803D),
+    name: 'Queenstown',
+    country: 'New Zealand',
+    tagline: 'Adventure capital of the world',
+    category: 'adventure',
+    interests: [TripInterest.adventure, TripInterest.nature],
+    color: Color(0xFF16A34A),
+    colorDark: Color(0xFF15803D),
     icon: Icons.paragliding_rounded,
   ),
   _Destination(
-    name: 'Rome', country: 'Italy', tagline: 'Eternal city of history',
-    category: 'culture', interests: [TripInterest.culture, TripInterest.food],
-    color: Color(0xFFCA8A04), colorDark: Color(0xFFA16207),
+    name: 'Rome',
+    country: 'Italy',
+    tagline: 'Eternal city of history',
+    category: 'culture',
+    interests: [TripInterest.culture, TripInterest.food],
+    color: Color(0xFFCA8A04),
+    colorDark: Color(0xFFA16207),
     icon: Icons.account_balance_rounded,
   ),
   _Destination(
-    name: 'Maldives', country: 'Maldives', tagline: 'Crystal lagoons & coral reefs',
-    category: 'beach', interests: [TripInterest.nature, TripInterest.wellness, TripInterest.adventure],
-    color: Color(0xFF0891B2), colorDark: Color(0xFF0E7490),
+    name: 'Maldives',
+    country: 'Maldives',
+    tagline: 'Crystal lagoons & coral reefs',
+    category: 'beach',
+    interests: [
+      TripInterest.nature,
+      TripInterest.wellness,
+      TripInterest.adventure
+    ],
+    color: Color(0xFF0891B2),
+    colorDark: Color(0xFF0E7490),
     icon: Icons.water_rounded,
   ),
   _Destination(
-    name: 'Istanbul', country: 'Turkey', tagline: 'Where East meets West',
-    category: 'culture', interests: [TripInterest.culture, TripInterest.food, TripInterest.shopping],
-    color: Color(0xFFDC2626), colorDark: Color(0xFFB91C1C),
+    name: 'Istanbul',
+    country: 'Turkey',
+    tagline: 'Where East meets West',
+    category: 'culture',
+    interests: [TripInterest.culture, TripInterest.food, TripInterest.shopping],
+    color: Color(0xFFDC2626),
+    colorDark: Color(0xFFB91C1C),
     icon: Icons.mosque_rounded,
   ),
   _Destination(
-    name: 'Lisbon', country: 'Portugal', tagline: 'City of seven hills & fado',
-    category: 'city', interests: [TripInterest.culture, TripInterest.food, TripInterest.nightlife],
-    color: Color(0xFF0F766E), colorDark: Color(0xFF115E59),
+    name: 'Lisbon',
+    country: 'Portugal',
+    tagline: 'City of seven hills & fado',
+    category: 'city',
+    interests: [
+      TripInterest.culture,
+      TripInterest.food,
+      TripInterest.nightlife
+    ],
+    color: Color(0xFF0F766E),
+    colorDark: Color(0xFF115E59),
     icon: Icons.tram_rounded,
   ),
   _Destination(
-    name: 'Singapore', country: 'Singapore', tagline: 'Garden city of Asia',
-    category: 'city', interests: [TripInterest.food, TripInterest.shopping, TripInterest.culture],
-    color: Color(0xFF7C3AED), colorDark: Color(0xFF5B21B6),
+    name: 'Singapore',
+    country: 'Singapore',
+    tagline: 'Garden city of Asia',
+    category: 'city',
+    interests: [TripInterest.food, TripInterest.shopping, TripInterest.culture],
+    color: Color(0xFF7C3AED),
+    colorDark: Color(0xFF5B21B6),
     icon: Icons.park_rounded,
   ),
   _Destination(
-    name: 'Barcelona', country: 'Spain', tagline: 'Gaudí & beach culture',
-    category: 'city', interests: [TripInterest.culture, TripInterest.food, TripInterest.nightlife],
-    color: Color(0xFFEA580C), colorDark: Color(0xFFC2410C),
+    name: 'Barcelona',
+    country: 'Spain',
+    tagline: 'Gaudí & beach culture',
+    category: 'city',
+    interests: [
+      TripInterest.culture,
+      TripInterest.food,
+      TripInterest.nightlife
+    ],
+    color: Color(0xFFEA580C),
+    colorDark: Color(0xFFC2410C),
     icon: Icons.architecture_rounded,
   ),
   _Destination(
-    name: 'Vancouver', country: 'Canada', tagline: 'Mountains, forests & ocean',
-    category: 'nature', interests: [TripInterest.nature, TripInterest.adventure, TripInterest.food],
-    color: Color(0xFF059669), colorDark: Color(0xFF047857),
+    name: 'Vancouver',
+    country: 'Canada',
+    tagline: 'Mountains, forests & ocean',
+    category: 'nature',
+    interests: [TripInterest.nature, TripInterest.adventure, TripInterest.food],
+    color: Color(0xFF059669),
+    colorDark: Color(0xFF047857),
     icon: Icons.forest_rounded,
   ),
   _Destination(
-    name: 'Cairo', country: 'Egypt', tagline: 'Pharaohs & the Nile',
-    category: 'culture', interests: [TripInterest.culture, TripInterest.adventure],
-    color: Color(0xFFD97706), colorDark: Color(0xFFB45309),
+    name: 'Cairo',
+    country: 'Egypt',
+    tagline: 'Pharaohs & the Nile',
+    category: 'culture',
+    interests: [TripInterest.culture, TripInterest.adventure],
+    color: Color(0xFFD97706),
+    colorDark: Color(0xFFB45309),
     icon: Icons.account_balance_rounded,
   ),
   _Destination(
-    name: 'Prague', country: 'Czech Republic', tagline: 'Fairy-tale spires & old town',
-    category: 'city', interests: [TripInterest.culture, TripInterest.nightlife, TripInterest.food],
-    color: Color(0xFF7C3AED), colorDark: Color(0xFF5B21B6),
+    name: 'Prague',
+    country: 'Czech Republic',
+    tagline: 'Fairy-tale spires & old town',
+    category: 'city',
+    interests: [
+      TripInterest.culture,
+      TripInterest.nightlife,
+      TripInterest.food
+    ],
+    color: Color(0xFF7C3AED),
+    colorDark: Color(0xFF5B21B6),
     icon: Icons.castle_rounded,
   ),
   _Destination(
-    name: 'Phuket', country: 'Thailand', tagline: 'Tropical paradise & nightlife',
-    category: 'beach', interests: [TripInterest.adventure, TripInterest.nightlife, TripInterest.food],
-    color: Color(0xFF0891B2), colorDark: Color(0xFF0E7490),
+    name: 'Phuket',
+    country: 'Thailand',
+    tagline: 'Tropical paradise & nightlife',
+    category: 'beach',
+    interests: [
+      TripInterest.adventure,
+      TripInterest.nightlife,
+      TripInterest.food
+    ],
+    color: Color(0xFF0891B2),
+    colorDark: Color(0xFF0E7490),
     icon: Icons.beach_access_rounded,
   ),
   _Destination(
-    name: 'Dubai', country: 'UAE', tagline: 'Desert luxury & sky-high thrills',
-    category: 'adventure', interests: [TripInterest.shopping, TripInterest.adventure, TripInterest.nightlife],
-    color: Color(0xFFCA8A04), colorDark: Color(0xFFA16207),
+    name: 'Dubai',
+    country: 'UAE',
+    tagline: 'Desert luxury & sky-high thrills',
+    category: 'adventure',
+    interests: [
+      TripInterest.shopping,
+      TripInterest.adventure,
+      TripInterest.nightlife
+    ],
+    color: Color(0xFFCA8A04),
+    colorDark: Color(0xFFA16207),
     icon: Icons.business_rounded,
   ),
   _Destination(
-    name: 'Rio de Janeiro', country: 'Brazil', tagline: 'Carnival, beaches & samba',
-    category: 'beach', interests: [TripInterest.adventure, TripInterest.culture, TripInterest.nightlife],
-    color: Color(0xFF16A34A), colorDark: Color(0xFF15803D),
+    name: 'Rio de Janeiro',
+    country: 'Brazil',
+    tagline: 'Carnival, beaches & samba',
+    category: 'beach',
+    interests: [
+      TripInterest.adventure,
+      TripInterest.culture,
+      TripInterest.nightlife
+    ],
+    color: Color(0xFF16A34A),
+    colorDark: Color(0xFF15803D),
     icon: Icons.beach_access_rounded,
   ),
   _Destination(
-    name: 'Amsterdam', country: 'Netherlands', tagline: 'Canals, bikes & museums',
-    category: 'city', interests: [TripInterest.culture, TripInterest.food, TripInterest.nightlife],
-    color: Color(0xFF1D4ED8), colorDark: Color(0xFF1E40AF),
+    name: 'Amsterdam',
+    country: 'Netherlands',
+    tagline: 'Canals, bikes & museums',
+    category: 'city',
+    interests: [
+      TripInterest.culture,
+      TripInterest.food,
+      TripInterest.nightlife
+    ],
+    color: Color(0xFF1D4ED8),
+    colorDark: Color(0xFF1E40AF),
     icon: Icons.directions_bike_rounded,
   ),
 ];
@@ -194,13 +344,41 @@ class _Category {
 }
 
 const _categories = <_Category>[
-  _Category(id: 'all',       label: 'All',       icon: Icons.explore_rounded,       color: AppColors.primary),
-  _Category(id: 'city',      label: 'City',      icon: Icons.location_city_rounded,  color: Color(0xFF7C3AED)),
-  _Category(id: 'beach',     label: 'Beach',     icon: Icons.beach_access_rounded,   color: Color(0xFF0891B2)),
-  _Category(id: 'culture',   label: 'Culture',   icon: Icons.account_balance_rounded,color: Color(0xFFCA8A04)),
-  _Category(id: 'adventure', label: 'Adventure', icon: Icons.terrain_rounded,        color: Color(0xFFEA580C)),
-  _Category(id: 'mountain',  label: 'Mountain',  icon: Icons.landscape_rounded,      color: Color(0xFF059669)),
-  _Category(id: 'nature',    label: 'Nature',    icon: Icons.forest_rounded,         color: Color(0xFF16A34A)),
+  _Category(
+      id: 'all',
+      label: 'All',
+      icon: Icons.explore_rounded,
+      color: AppColors.primary),
+  _Category(
+      id: 'city',
+      label: 'City',
+      icon: Icons.location_city_rounded,
+      color: Color(0xFF7C3AED)),
+  _Category(
+      id: 'beach',
+      label: 'Beach',
+      icon: Icons.beach_access_rounded,
+      color: Color(0xFF0891B2)),
+  _Category(
+      id: 'culture',
+      label: 'Culture',
+      icon: Icons.account_balance_rounded,
+      color: Color(0xFFCA8A04)),
+  _Category(
+      id: 'adventure',
+      label: 'Adventure',
+      icon: Icons.terrain_rounded,
+      color: Color(0xFFEA580C)),
+  _Category(
+      id: 'mountain',
+      label: 'Mountain',
+      icon: Icons.landscape_rounded,
+      color: Color(0xFF059669)),
+  _Category(
+      id: 'nature',
+      label: 'Nature',
+      icon: Icons.forest_rounded,
+      color: Color(0xFF16A34A)),
 ];
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
@@ -350,21 +528,16 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                   final cat = _categories[i];
                   final selected = _selectedCategory == cat.id;
                   return GestureDetector(
-                    onTap: () =>
-                        setState(() => _selectedCategory = cat.id),
+                    onTap: () => setState(() => _selectedCategory = cat.id),
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 150),
                       padding: const EdgeInsets.symmetric(
                           horizontal: 14, vertical: 6),
                       decoration: BoxDecoration(
-                        color: selected
-                            ? cat.color
-                            : AppColors.surface,
+                        color: selected ? cat.color : AppColors.surface,
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                          color: selected
-                              ? cat.color
-                              : AppColors.divider,
+                          color: selected ? cat.color : AppColors.divider,
                         ),
                       ),
                       child: Row(
@@ -507,8 +680,7 @@ class _DestinationCard extends StatelessWidget {
                     right: -8,
                     bottom: -8,
                     child: Icon(dest.icon,
-                        size: 72,
-                        color: Colors.white.withValues(alpha: 0.1)),
+                        size: 72, color: Colors.white.withValues(alpha: 0.1)),
                   ),
                   Padding(
                     padding: const EdgeInsets.all(14),

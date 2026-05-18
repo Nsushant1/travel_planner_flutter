@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
-import '../../../data/models/trip.dart';
-import '../../../data/services/itinerary_generator.dart';
-import '../../../data/services/places_service.dart';
+import 'package:travel_planner/data/models/trip.dart';
+import 'package:travel_planner/data/services/itinerary_generator.dart';
+import 'package:travel_planner/data/services/places_service.dart';
 
 const _uuid = Uuid();
 
@@ -115,7 +115,8 @@ class TripSetupNotifier extends StateNotifier<TripSetupState> {
     } catch (e) {
       state = state.copyWith(
         isGenerating: false,
-        generationError: 'Could not load places for this destination. Using suggested itinerary.',
+        generationError:
+            'Could not load places for this destination. Using suggested itinerary.',
       );
       // Fallback to pure templates so the user still gets an itinerary
       final dest = state.destination.trim();

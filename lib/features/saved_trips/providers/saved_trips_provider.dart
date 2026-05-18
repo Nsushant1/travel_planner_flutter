@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../data/models/trip.dart';
-import '../../../data/services/trip_repository.dart';
-import '../../auth/providers/auth_provider.dart';
+import 'package:travel_planner/data/models/trip.dart';
+import 'package:travel_planner/data/services/trip_repository.dart';
+import 'package:travel_planner/features/auth/providers/auth_provider.dart';
 
 class SavedTripsNotifier extends AsyncNotifier<List<Trip>> {
   @override
