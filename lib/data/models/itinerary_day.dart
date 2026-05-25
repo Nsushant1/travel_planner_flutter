@@ -1,4 +1,4 @@
-import 'activity.dart';
+import 'package:travel_planner/data/models/activity.dart';
 
 class ItineraryDay {
   final int dayNumber;

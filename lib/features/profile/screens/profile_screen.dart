@@ -141,7 +141,7 @@ class ProfileScreen extends ConsumerWidget {
                     _Tile(
                         icon: Icons.map_outlined,
                         label: 'Maps',
-                        value: 'OpenStreetMap'),
+                        value: 'Google Maps'),
                     _Tile(
                         icon: Icons.cloud_outlined,
                         label: 'Weather',

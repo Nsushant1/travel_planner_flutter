@@ -43,9 +43,30 @@ class RouteOptimizationScreen extends ConsumerWidget {
             _AlgorithmBanner(trip: trip),
             Expanded(
               child: TabBarView(
-                children: trip.days
-                    .map((day) => _DayRouteView(day: day, trip: trip))
-                    .toList(),
+                children: trip.days.map((day) {
+                  return _DayRouteView(
+                    day: day,
+                    trip: trip,
+                    onApplyRoute: (reordered) {
+                      final idx = trip.days
+                          .indexWhere((d) => d.dayNumber == day.dayNumber);
+                      if (idx == -1) return;
+                      final updatedDays = [...trip.days];
+                      updatedDays[idx] =
+                          day.copyWith(activities: reordered);
+                      ref.read(currentTripProvider.notifier).update(
+                            (_) => trip.copyWith(days: updatedDays),
+                          );
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                              'Optimized route applied to Day ${day.dayNumber}'),
+                          duration: const Duration(seconds: 2),
+                        ),
+                      );
+                    },
+                  );
+                }).toList(),
               ),
             ),
           ],
@@ -87,8 +108,8 @@ class _AlgorithmBanner extends StatelessWidget {
           const SizedBox(width: 10),
           const Expanded(
             child: Text(
-              'GPS coordinates will be added in Phase 6 (Google Places). '
-              'Route order is computed — distances show as 0 until then.',
+              'GPS coordinates are populated from Google Places. '
+              'Route order is computed — distances show as 0 when no coords are available.',
               style: TextStyle(fontSize: 12, color: AppColors.warning),
             ),
           ),
@@ -126,7 +147,8 @@ class _DayTabBar extends StatelessWidget {
 class _DayRouteView extends StatefulWidget {
   final ItineraryDay day;
   final Trip trip;
-  const _DayRouteView({required this.day, required this.trip});
+  final void Function(List<Activity> reordered)? onApplyRoute;
+  const _DayRouteView({required this.day, required this.trip, this.onApplyRoute});
 
   @override
   State<_DayRouteView> createState() => _DayRouteViewState();
@@ -201,6 +223,31 @@ class _DayRouteViewState extends State<_DayRouteView>
           onChanged: (v) => setState(() => _showOptimized = v),
         ),
         const SizedBox(height: 20),
+
+        // Apply button — only shown when optimized view is active
+        if (_showOptimized && widget.onApplyRoute != null) ...[
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: () {
+                final reordered = _optimizedOrder
+                    .map((i) => activities[i])
+                    .toList();
+                widget.onApplyRoute!(reordered);
+              },
+              icon: const Icon(Icons.check_circle_outline_rounded, size: 18),
+              label: const Text('Apply Optimized Route to Itinerary'),
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+        ],
 
         // Route stops
         ...List.generate(_displayOrder.length, (i) {
@@ -307,7 +354,7 @@ class _StatsCard extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        'Distances available after Phase 6 (Google Places)',
+                        'Distances available once GPS coordinates are loaded.',
                         style: TextStyle(
                             fontSize: 12, color: AppColors.textSecondary),
                       ),

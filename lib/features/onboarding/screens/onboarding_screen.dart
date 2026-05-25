@@ -35,7 +35,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       icon: Icons.map_rounded,
       title: 'Real Places & Live Weather',
       description:
-          'Discover actual landmarks and restaurants from OpenStreetMap, see your route on an interactive map, and get live weather forecasts for every day.',
+          'Discover actual landmarks and restaurants via Google Maps, see your route on an interactive map, and get live weather forecasts for every day.',
     ),
   ];
 

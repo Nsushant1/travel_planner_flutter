@@ -40,9 +40,7 @@ class ItineraryScreen extends ConsumerWidget {
               _DayTabBar(days: trip.days),
               Expanded(
                 child: TabBarView(
-                  children: trip.days
-                      .map((day) => _DayView(day: day, trip: trip))
-                      .toList(),
+                  children: trip.days.map((day) => _DayView(day: day, trip: trip)).toList(),
                 ),
               ),
             ],
@@ -53,8 +51,7 @@ class ItineraryScreen extends ConsumerWidget {
           backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
           icon: const Icon(Icons.route_rounded),
-          label: const Text('Optimize Route',
-              style: TextStyle(fontWeight: FontWeight.w600)),
+          label: const Text('Optimize Route', style: TextStyle(fontWeight: FontWeight.w600)),
         ),
       ),
     );
@@ -70,8 +67,7 @@ class _TripSliverAppBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final fmt = DateFormat('dd MMM');
-    final dateRange =
-        '${fmt.format(trip.startDate)} – ${fmt.format(trip.endDate)}';
+    final dateRange = '${fmt.format(trip.startDate)} – ${fmt.format(trip.endDate)}';
     final weatherAsync = ref.watch(weatherProvider(trip.destination));
 
     return SliverAppBar(
@@ -91,20 +87,14 @@ class _TripSliverAppBar extends ConsumerWidget {
           children: [
             Text(
               trip.destination,
-              style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: Colors.white),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white),
             ),
             const SizedBox(height: 2),
             Row(
               children: [
                 Text(
                   '$dateRange  •  ${trip.totalDays} days',
-                  style: const TextStyle(
-                      fontSize: 11,
-                      color: Colors.white70,
-                      fontWeight: FontWeight.w400),
+                  style: const TextStyle(fontSize: 11, color: Colors.white70, fontWeight: FontWeight.w400),
                 ),
                 const SizedBox(width: 8),
                 _BudgetBadge(type: trip.budgetType),
@@ -113,9 +103,7 @@ class _TripSliverAppBar extends ConsumerWidget {
             const SizedBox(height: 6),
             // Weather chip
             weatherAsync.when(
-              data: (weather) => weather != null
-                  ? CurrentWeatherChip(weather: weather)
-                  : const SizedBox.shrink(),
+              data: (weather) => weather != null ? CurrentWeatherChip(weather: weather) : const SizedBox.shrink(),
               loading: () => const WeatherChipLoading(),
               error: (_, __) => const SizedBox.shrink(),
             ),
@@ -133,8 +121,7 @@ class _TripSliverAppBar extends ConsumerWidget {
             alignment: Alignment.topRight,
             child: Padding(
               padding: EdgeInsets.all(20),
-              child: Icon(Icons.flight_takeoff_rounded,
-                  size: 72, color: Colors.white12),
+              child: Icon(Icons.flight_takeoff_rounded, size: 72, color: Colors.white12),
             ),
           ),
         ),
@@ -153,9 +140,7 @@ class _TripSliverAppBar extends ConsumerWidget {
                 false;
             return IconButton(
               icon: Icon(
-                isSaved
-                    ? Icons.bookmark_rounded
-                    : Icons.bookmark_outline_rounded,
+                isSaved ? Icons.bookmark_rounded : Icons.bookmark_outline_rounded,
                 color: isSaved ? AppColors.secondary : Colors.white,
               ),
               tooltip: isSaved ? 'Saved' : 'Save trip',
@@ -195,9 +180,7 @@ class _BudgetBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(6),
         border: Border.all(color: color.withValues(alpha: 0.5)),
       ),
-      child: Text(label,
-          style: TextStyle(
-              fontSize: 10, fontWeight: FontWeight.w700, color: color)),
+      child: Text(label, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: color)),
     );
   }
 }
@@ -220,8 +203,7 @@ class _DayTabBar extends StatelessWidget {
         indicatorColor: AppColors.primary,
         indicatorWeight: 2.5,
         labelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
-        unselectedLabelStyle:
-            const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+        unselectedLabelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
         tabs: days.map((d) => Tab(text: 'Day ${d.dayNumber}')).toList(),
       ),
     );
@@ -246,9 +228,7 @@ class _DayView extends ConsumerWidget {
     weatherAsync.whenData((weather) {
       if (weather == null) return;
       for (final f in weather.forecast) {
-        if (f.date.year == date.year &&
-            f.date.month == date.month &&
-            f.date.day == date.day) {
+        if (f.date.year == date.year && f.date.month == date.month && f.date.day == date.day) {
           dayForecast = f;
           break;
         }
@@ -276,8 +256,7 @@ class _DayView extends ConsumerWidget {
                   const SizedBox(height: 2),
                   Text(
                     fmt.format(date),
-                    style: const TextStyle(
-                        fontSize: 13, color: AppColors.textSecondary),
+                    style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
                   ),
                 ],
               ),
@@ -290,10 +269,7 @@ class _DayView extends ConsumerWidget {
               ),
               child: Text(
                 '${day.activities.length} activities',
-                style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.primary),
+                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.primary),
               ),
             ),
           ],

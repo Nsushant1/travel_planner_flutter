@@ -1,10 +1,10 @@
+import 'dart:math';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:latlong2/latlong.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 import 'package:travel_planner/core/constants/app_colors.dart';
 import 'package:travel_planner/core/utils/tsp_solver.dart';
@@ -21,13 +21,15 @@ class MapScreen extends ConsumerStatefulWidget {
 }
 
 class _MapScreenState extends ConsumerState<MapScreen> {
-  final _mapController = MapController();
+  GoogleMapController? _mapController;
   int _selectedDayIndex = 0;
   Activity? _tappedActivity;
+  Set<Marker> _markers = {};
+  Set<Polyline> _polylines = {};
 
   @override
   void dispose() {
-    _mapController.dispose();
+    _mapController?.dispose();
     super.dispose();
   }
 
@@ -37,46 +39,124 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
   LatLng _latLng(Activity a) => LatLng(a.latitude, a.longitude);
 
-  ({Color bg, Color fg, IconData icon}) _slotStyle(String slot) =>
-      switch (slot) {
-        'morning' => (
-            bg: const Color(0xFFF59E0B),
-            fg: Colors.white,
-            icon: Icons.wb_sunny_rounded,
-          ),
-        'afternoon' => (
-            bg: AppColors.primary,
-            fg: Colors.white,
-            icon: Icons.wb_cloudy_rounded,
-          ),
-        _ => (
-            bg: const Color(0xFF7C3AED),
-            fg: Colors.white,
-            icon: Icons.nights_stay_rounded,
-          ),
+  Color _slotColor(String slot) => switch (slot) {
+        'morning' => const Color(0xFFF59E0B),
+        'afternoon' => AppColors.primary,
+        _ => const Color(0xFF7C3AED),
       };
 
   List<Activity> _orderedActivities(ItineraryDay day) {
     final acts = day.activities;
     final withCoords = acts.where(_hasCoords).toList();
     if (withCoords.length < 2) return acts;
-
     final points =
         withCoords.map((a) => (lat: a.latitude, lng: a.longitude)).toList();
     final order = TspSolver.nearestNeighbor(points);
     return order.map((i) => withCoords[i]).toList();
   }
 
+  // ─── Canvas-painted numbered pin ───────────────────────────────────────────
+
+  Future<BitmapDescriptor> _buildMarkerIcon(int number, Color bg) async {
+    const double r = 40;
+    const double totalH = 56;
+    const double w = r * 2;
+
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(recorder, Rect.fromLTWH(0, 0, w, totalH));
+
+    canvas.drawCircle(const Offset(r, r), r, Paint()..color = bg);
+    canvas.drawCircle(
+      const Offset(r, r),
+      r - 3,
+      Paint()
+        ..color = Colors.white
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3,
+    );
+
+    final tailPath = ui.Path()
+      ..moveTo(r - 7, r * 2 - 6)
+      ..lineTo(r, totalH)
+      ..lineTo(r + 7, r * 2 - 6)
+      ..close();
+    canvas.drawPath(tailPath, Paint()..color = bg);
+
+    final tp = TextPainter(
+      text: TextSpan(
+        text: '$number',
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 26,
+          fontWeight: FontWeight.w800,
+          height: 1,
+        ),
+      ),
+      textDirection: ui.TextDirection.ltr,
+    )..layout();
+    tp.paint(canvas, Offset(r - tp.width / 2, r - tp.height / 2));
+
+    final picture = recorder.endRecording();
+    final img = await picture.toImage(w.toInt(), totalH.toInt());
+    final bytes = await img.toByteData(format: ui.ImageByteFormat.png);
+    return BitmapDescriptor.bytes(bytes!.buffer.asUint8List());
+  }
+
+  // ─── Build markers + polyline for a day ────────────────────────────────────
+
+  Future<void> _buildOverlay(List<Activity> ordered) async {
+    final withCoords = ordered.where(_hasCoords).toList();
+
+    final markers = <Marker>{};
+    for (var i = 0; i < withCoords.length; i++) {
+      final a = withCoords[i];
+      final icon = await _buildMarkerIcon(i + 1, _slotColor(a.timeSlot));
+      markers.add(Marker(
+        markerId: MarkerId(a.id),
+        position: _latLng(a),
+        icon: icon,
+        onTap: () => setState(() => _tappedActivity = a),
+      ));
+    }
+
+    final polylines = <Polyline>{};
+    if (withCoords.length >= 2) {
+      polylines.add(Polyline(
+        polylineId: const PolylineId('route'),
+        points: withCoords.map(_latLng).toList(),
+        width: 3,
+        color: AppColors.primary.withValues(alpha: 0.7),
+        patterns: [PatternItem.dash(12), PatternItem.gap(6)],
+      ));
+    }
+
+    if (mounted) {
+      setState(() {
+        _markers = markers;
+        _polylines = polylines;
+      });
+    }
+  }
+
   void _fitBounds(List<Activity> activities) {
-    final pts = activities.where(_hasCoords).map(_latLng).toList();
+    final ctrl = _mapController;
+    if (ctrl == null) return;
+    final pts = activities.where(_hasCoords).toList();
     if (pts.isEmpty) return;
     if (pts.length == 1) {
-      _mapController.move(pts.first, 14);
+      ctrl.animateCamera(CameraUpdate.newLatLngZoom(_latLng(pts.first), 14));
       return;
     }
-    final bounds = LatLngBounds.fromPoints(pts);
-    _mapController.fitCamera(
-      CameraFit.bounds(bounds: bounds, padding: const EdgeInsets.all(60)),
+    final lats = pts.map((a) => a.latitude);
+    final lngs = pts.map((a) => a.longitude);
+    ctrl.animateCamera(
+      CameraUpdate.newLatLngBounds(
+        LatLngBounds(
+          southwest: LatLng(lats.reduce(min), lngs.reduce(min)),
+          northeast: LatLng(lats.reduce(max), lngs.reduce(max)),
+        ),
+        60,
+      ),
     );
   }
 
@@ -96,107 +176,28 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final day = trip.days[_selectedDayIndex];
     final ordered = _orderedActivities(day);
     final hasAnyCoords = ordered.any(_hasCoords);
+    final initialTarget = hasAnyCoords
+        ? _latLng(ordered.firstWhere(_hasCoords))
+        : const LatLng(20, 0);
 
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Stack(
         children: [
           // ── Map ──
-          FlutterMap(
-            mapController: _mapController,
-            options: MapOptions(
-              initialCenter: hasAnyCoords
-                  ? _latLng(ordered.firstWhere(_hasCoords))
-                  : const LatLng(20, 0),
-              initialZoom: 13,
-              onMapReady: () => _fitBounds(ordered),
-              onTap: (_, __) => setState(() => _tappedActivity = null),
-            ),
-            children: [
-              // OSM tile layer
-              TileLayer(
-                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                userAgentPackageName: 'com.example.travel_planner',
-                maxZoom: 19,
-              ),
-
-              // Route polyline
-              if (hasAnyCoords)
-                PolylineLayer(
-                  polylines: [
-                    Polyline(
-                      points: ordered.where(_hasCoords).map(_latLng).toList(),
-                      strokeWidth: 3.0,
-                      color: AppColors.primary.withValues(alpha: 0.7),
-                      pattern: StrokePattern.dashed(segments: [12, 6]),
-                    ),
-                  ],
-                ),
-
-              // Activity markers
-              if (hasAnyCoords)
-                MarkerLayer(
-                  markers: ordered
-                      .where(_hasCoords)
-                      .toList()
-                      .asMap()
-                      .entries
-                      .map((e) {
-                    final idx = e.key;
-                    final activity = e.value;
-                    final style = _slotStyle(activity.timeSlot);
-                    final isTapped = _tappedActivity == activity;
-
-                    return Marker(
-                      point: _latLng(activity),
-                      width: 44,
-                      height: 56,
-                      child: GestureDetector(
-                        onTap: () => setState(() => _tappedActivity = activity),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            AnimatedContainer(
-                              duration: const Duration(milliseconds: 150),
-                              width: isTapped ? 44 : 36,
-                              height: isTapped ? 44 : 36,
-                              decoration: BoxDecoration(
-                                color: style.bg,
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                    color: Colors.white,
-                                    width: isTapped ? 3 : 2),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: style.bg.withValues(alpha: 0.5),
-                                    blurRadius: isTapped ? 10 : 4,
-                                    spreadRadius: isTapped ? 2 : 0,
-                                  ),
-                                ],
-                              ),
-                              child: Center(
-                                child: Text(
-                                  '${idx + 1}',
-                                  style: TextStyle(
-                                    color: style.fg,
-                                    fontSize: isTapped ? 15 : 13,
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            // Marker pin tail
-                            CustomPaint(
-                              size: const Size(10, 6),
-                              painter: _PinTailPainter(color: style.bg),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ),
-            ],
+          GoogleMap(
+            initialCameraPosition:
+                CameraPosition(target: initialTarget, zoom: 13),
+            markers: _markers,
+            polylines: _polylines,
+            myLocationButtonEnabled: false,
+            zoomControlsEnabled: false,
+            mapToolbarEnabled: false,
+            onMapCreated: (controller) {
+              _mapController = controller;
+              _buildOverlay(ordered).then((_) => _fitBounds(ordered));
+            },
+            onTap: (_) => setState(() => _tappedActivity = null),
           ),
 
           // ── AppBar overlay ──
@@ -219,9 +220,14 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 setState(() {
                   _selectedDayIndex = i;
                   _tappedActivity = null;
+                  _markers = {};
+                  _polylines = {};
                 });
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  _fitBounds(_orderedActivities(trip.days[i]));
+                final newOrdered = _orderedActivities(trip.days[i]);
+                _buildOverlay(newOrdered).then((_) {
+                  WidgetsBinding.instance.addPostFrameCallback(
+                    (_) => _fitBounds(newOrdered),
+                  );
                 });
               },
             ),
@@ -340,7 +346,8 @@ class _DaySelector extends StatelessWidget {
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 150),
               margin: const EdgeInsets.only(right: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               decoration: BoxDecoration(
                 color: selected ? AppColors.primary : Colors.white,
                 borderRadius: BorderRadius.circular(20),
@@ -470,26 +477,22 @@ class _ActivityInfoCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 7, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: slotColor.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        activity.timeSlot[0].toUpperCase() +
-                            activity.timeSlot.substring(1),
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                          color: slotColor,
-                        ),
-                      ),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: slotColor.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    activity.timeSlot[0].toUpperCase() +
+                        activity.timeSlot.substring(1),
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: slotColor,
                     ),
-                  ],
+                  ),
                 ),
                 const SizedBox(height: 6),
                 Text(
@@ -542,25 +545,4 @@ class _ActivityInfoCard extends StatelessWidget {
       ),
     );
   }
-}
-
-// ─── Pin tail painter ──────────────────────────────────────────────────────────
-
-class _PinTailPainter extends CustomPainter {
-  final Color color;
-  const _PinTailPainter({required this.color});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = color;
-    final path = ui.Path()
-      ..moveTo(0, 0)
-      ..lineTo(size.width / 2, size.height)
-      ..lineTo(size.width, 0)
-      ..close();
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(_PinTailPainter old) => old.color != color;
 }

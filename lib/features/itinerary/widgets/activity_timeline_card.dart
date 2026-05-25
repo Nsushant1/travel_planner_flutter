@@ -68,7 +68,7 @@ class ActivityTimelineCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Slot label + duration + chevron
+                        // Slot label + time range + duration + chevron
                         Row(
                           children: [
                             Container(
@@ -78,13 +78,20 @@ class ActivityTimelineCard extends StatelessWidget {
                                 color: slot.color.withValues(alpha: 0.12),
                                 borderRadius: BorderRadius.circular(6),
                               ),
-                              child: Text(
-                                slot.label,
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                  color: slot.color,
-                                ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(slot.icon, size: 10, color: slot.color),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '${activity.scheduledTime} – ${activity.scheduledEndTime}',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: slot.color,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                             const Spacer(),

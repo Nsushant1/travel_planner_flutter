@@ -1,6 +1,8 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
+import 'package:travel_planner/core/config/app_config.dart';
 import 'package:travel_planner/data/models/place.dart';
 import 'package:travel_planner/data/models/trip.dart';
 
@@ -19,12 +21,12 @@ class GeocodedLocation {
 }
 
 class PlacesService {
-  static const _nominatim = 'https://nominatim.openstreetmap.org';
-  static const _overpass = 'https://overpass-api.de/api/interpreter';
-  static const _userAgent = 'TripGenie/1.0 (Flutter travel planner)';
+  static const _geocodeUrl =
+      'https://maps.googleapis.com/maps/api/geocode/json';
+  static const _nearbyUrl =
+      'https://maps.googleapis.com/maps/api/place/nearbysearch/json';
 
   final Dio _dio;
-
   PlacesService(this._dio);
 
   // ─── Geocoding ──────────────────────────────────────────────────────────────
@@ -32,29 +34,28 @@ class PlacesService {
   Future<GeocodedLocation?> geocode(String destination) async {
     try {
       final resp = await _dio.get(
-        '$_nominatim/search',
+        _geocodeUrl,
         queryParameters: {
-          'q': destination,
-          'format': 'json',
-          'limit': 1,
-          'addressdetails': 0,
+          'address': destination,
+          'key': AppConfig.googleMapsApiKey,
         },
-        options: Options(headers: {'User-Agent': _userAgent}),
       );
-      final data = resp.data as List<dynamic>;
-      if (data.isEmpty) return null;
-      final item = data.first as Map<String, dynamic>;
+      final results = (resp.data['results'] as List<dynamic>?) ?? [];
+      if (results.isEmpty) return null;
+      final first = results.first as Map<String, dynamic>;
+      final loc = first['geometry']['location'] as Map<String, dynamic>;
       return GeocodedLocation(
-        lat: double.parse(item['lat'] as String),
-        lng: double.parse(item['lon'] as String),
-        displayName: item['display_name'] as String,
+        lat: (loc['lat'] as num).toDouble(),
+        lng: (loc['lng'] as num).toDouble(),
+        displayName: first['formatted_address'] as String,
       );
-    } catch (_) {
+    } catch (e, st) {
+      debugPrint('PlacesService.geocode error: $e\n$st');
       return null;
     }
   }
 
-  // ─── POI fetching via Overpass ──────────────────────────────────────────────
+  // ─── POI fetching via Google Places Nearby Search ──────────────────────────
 
   Future<List<Place>> fetchNearbyPois({
     required double lat,
@@ -63,171 +64,117 @@ class PlacesService {
     int radiusMeters = 15000,
     int maxResults = 90,
   }) async {
-    final query = _buildOverpassQuery(lat, lng, radiusMeters, interests);
-    try {
-      final resp = await _dio.post(
-        _overpass,
-        data: query,
-        options: Options(
-          headers: {'User-Agent': _userAgent},
-          contentType: 'application/x-www-form-urlencoded',
-        ),
-      );
-      final elements = (resp.data['elements'] as List<dynamic>?) ?? [];
-      final places = <Place>[];
+    final types = _typesForInterests(interests);
+    final results = await Future.wait(
+      types.map((t) => _fetchByType(lat, lng, radiusMeters, t)),
+    );
 
-      for (final el in elements) {
-        final map = el as Map<String, dynamic>;
-        final tags = (map['tags'] as Map<String, dynamic>?) ?? {};
-
-        final name = (tags['name:en'] as String?) ?? (tags['name'] as String?);
-        if (name == null || name.trim().isEmpty) continue;
-
-        // Prefer node coords; for way/relation use center
-        double? eLat, eLng;
-        if (map['type'] == 'node') {
-          eLat = (map['lat'] as num?)?.toDouble();
-          eLng = (map['lon'] as num?)?.toDouble();
-        } else {
-          final center = map['center'] as Map<String, dynamic>?;
-          eLat = (center?['lat'] as num?)?.toDouble();
-          eLng = (center?['lon'] as num?)?.toDouble();
+    final seen = <String>{};
+    final places = <Place>[];
+    for (final batch in results) {
+      for (final p in batch) {
+        if (seen.add(p.name.toLowerCase()) && places.length < maxResults) {
+          places.add(p);
         }
-        if (eLat == null || eLng == null) continue;
+      }
+    }
+    return places;
+  }
 
+  List<String> _typesForInterests(List<TripInterest> interests) {
+    final types = <String>{'tourist_attraction', 'museum'};
+    for (final interest in interests) {
+      switch (interest) {
+        case TripInterest.food:
+          types.addAll(['restaurant', 'cafe']);
+        case TripInterest.nightlife:
+          types.addAll(['bar', 'night_club']);
+        case TripInterest.nature:
+          types.addAll(['park', 'natural_feature']);
+        case TripInterest.shopping:
+          types.add('shopping_mall');
+        case TripInterest.wellness:
+          types.add('spa');
+        case TripInterest.adventure:
+          types.add('amusement_park');
+        case TripInterest.culture:
+          types.addAll(['art_gallery', 'church']);
+      }
+    }
+    return types.toList();
+  }
+
+  Future<List<Place>> _fetchByType(
+    double lat,
+    double lng,
+    int radius,
+    String type,
+  ) async {
+    try {
+      final resp = await _dio.get(
+        _nearbyUrl,
+        queryParameters: {
+          'location': '$lat,$lng',
+          'radius': radius,
+          'type': type,
+          'key': AppConfig.googleMapsApiKey,
+        },
+      );
+      final results = (resp.data['results'] as List<dynamic>?) ?? [];
+      final places = <Place>[];
+      for (final el in results) {
+        final map = el as Map<String, dynamic>;
+        final name = (map['name'] as String?)?.trim();
+        if (name == null || name.isEmpty) continue;
+        final geo = map['geometry']?['location'] as Map<String, dynamic>?;
+        final pLat = (geo?['lat'] as num?)?.toDouble();
+        final pLng = (geo?['lng'] as num?)?.toDouble();
+        if (pLat == null || pLng == null) continue;
+        final placeTypes =
+            (map['types'] as List<dynamic>?)?.cast<String>() ?? [];
         places.add(Place(
           id: _uuid.v4(),
-          name: name.trim(),
-          description: _buildDescription(tags),
-          lat: eLat,
-          lng: eLng,
-          category: _classifyCategory(tags, interests),
+          name: name,
+          description: _buildDescription(placeTypes, map['vicinity'] as String?),
+          lat: pLat,
+          lng: pLng,
+          category: _classifyCategory(placeTypes),
         ));
-
-        if (places.length >= maxResults) break;
       }
       return places;
-    } catch (_) {
+    } catch (e, st) {
+      debugPrint('PlacesService._fetchByType($type) error: $e\n$st');
       return [];
     }
   }
 
-  // ─── Overpass query builder ─────────────────────────────────────────────────
-
-  String _buildOverpassQuery(
-    double lat,
-    double lng,
-    int radius,
-    List<TripInterest> interests,
-  ) {
-    final buf = StringBuffer();
-    buf.write('[out:json][timeout:25];\n(\n');
-
-    final around = 'around:$radius,$lat,$lng';
-
-    // Always fetch tourism & historic attractions
-    buf.write(
-        '  node[tourism~"museum|gallery|attraction|monument|castle|viewpoint|zoo|aquarium|theme_park"][$around];\n');
-    buf.write(
-        '  way[tourism~"museum|gallery|attraction|monument|castle|viewpoint"][$around];\n');
-    buf.write(
-        '  node[historic~"monument|castle|ruins|archaeological_site|memorial|mosque|church|temple"][$around];\n');
-
-    if (interests.contains(TripInterest.food) ||
-        interests.contains(TripInterest.nightlife)) {
-      buf.write(
-          '  node[amenity~"restaurant|cafe|bar|food_court|fast_food"][$around];\n');
-      buf.write('  node[amenity~"nightclub|pub|brewery"][$around];\n');
-    }
-
-    if (interests.contains(TripInterest.nature) ||
-        interests.contains(TripInterest.adventure)) {
-      buf.write(
-          '  node[natural~"peak|waterfall|spring|cave_entrance|beach|cliff"][$around];\n');
-      buf.write('  node[leisure~"nature_reserve|park|garden"][$around];\n');
-      buf.write('  way[leisure~"nature_reserve|park|garden"][$around];\n');
-    }
-
-    if (interests.contains(TripInterest.shopping)) {
-      buf.write(
-          '  node[shop~"mall|market|department_store|souvenir"][$around];\n');
-      buf.write('  node[amenity~"marketplace"][$around];\n');
-    }
-
-    if (interests.contains(TripInterest.wellness)) {
-      buf.write(
-          '  node[amenity~"spa|massage|swimming_pool|sauna"][$around];\n');
-      buf.write(
-          '  node[leisure~"spa|fitness_centre|swimming_pool"][$around];\n');
-    }
-
-    buf.write(');\nout center 150;\n');
-    return 'data=${Uri.encodeComponent(buf.toString())}';
-  }
-
   // ─── Helpers ───────────────────────────────────────────────────────────────
 
-  String _buildDescription(Map<String, dynamic> tags) {
+  String _buildDescription(List<String> types, String? vicinity) {
     final parts = <String>[];
-
-    final tourism = tags['tourism'] as String?;
-    final historic = tags['historic'] as String?;
-    final amenity = tags['amenity'] as String?;
-    final leisure = tags['leisure'] as String?;
-    final natural = tags['natural'] as String?;
-
-    if (tourism != null) parts.add(_humanize(tourism));
-    if (historic != null) parts.add(_humanize(historic));
-    if (amenity != null) parts.add(_humanize(amenity));
-    if (leisure != null) parts.add(_humanize(leisure));
-    if (natural != null) parts.add(_humanize(natural));
-
-    final openingHours = tags['opening_hours'] as String?;
-    if (openingHours != null) parts.add('Hours: $openingHours');
-
+    if (types.isNotEmpty) parts.add(_humanize(types.first));
+    if (vicinity != null && vicinity.isNotEmpty) parts.add(vicinity);
     return parts.join(' • ');
   }
 
   String _humanize(String s) =>
       s.split('_').map((w) => w[0].toUpperCase() + w.substring(1)).join(' ');
 
-  String _classifyCategory(
-    Map<String, dynamic> tags,
-    List<TripInterest> interests,
-  ) {
-    final tourism = tags['tourism'] as String? ?? '';
-    final historic = tags['historic'] as String? ?? '';
-    final amenity = tags['amenity'] as String? ?? '';
-    final leisure = tags['leisure'] as String? ?? '';
-    final natural = tags['natural'] as String? ?? '';
-    final shop = tags['shop'] as String? ?? '';
-
-    if (amenity == 'restaurant' ||
-        amenity == 'cafe' ||
-        amenity == 'fast_food' ||
-        amenity == 'food_court') {
-      return 'food';
+  String _classifyCategory(List<String> types) {
+    for (final t in types) {
+      if (t == 'restaurant' || t == 'cafe' || t == 'food' ||
+          t == 'bakery' || t == 'meal_takeaway') {
+        return 'food';
+      }
+      if (t == 'bar' || t == 'night_club') { return 'nightlife'; }
+      if (t == 'park' || t == 'natural_feature' || t == 'campground') {
+        return 'nature';
+      }
+      if (t == 'shopping_mall' || t == 'store' || t == 'department_store') {
+        return 'shopping';
+      }
+      if (t == 'spa' || t == 'gym' || t == 'beauty_salon') { return 'wellness'; }
     }
-    if (amenity == 'bar' ||
-        amenity == 'nightclub' ||
-        amenity == 'pub' ||
-        amenity == 'brewery') {
-      return 'nightlife';
-    }
-    if (natural.isNotEmpty) return 'nature';
-    if (leisure == 'nature_reserve' || leisure == 'park' || leisure == 'garden') {
-      return 'nature';
-    }
-    if (shop.isNotEmpty || amenity == 'marketplace') return 'shopping';
-    if (leisure == 'spa' ||
-        amenity == 'spa' ||
-        amenity == 'massage' ||
-        amenity == 'swimming_pool') {
-      return 'wellness';
-    }
-    if (tourism == 'viewpoint' || tourism == 'attraction') return 'culture';
-    if (historic.isNotEmpty) return 'culture';
-    if (tourism.isNotEmpty) return 'culture';
     return 'culture';
   }
 }

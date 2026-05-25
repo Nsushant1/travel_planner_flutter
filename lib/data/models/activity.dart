@@ -49,6 +49,30 @@ class Activity {
         'duration_minutes': estimatedDurationMinutes,
       };
 
+  /// Nominal start time for display, derived from the time slot.
+  String get scheduledTime => switch (timeSlot) {
+    'morning' => '9:00 AM',
+    'afternoon' => '1:00 PM',
+    'evening' => '6:30 PM',
+    _ => '',
+  };
+
+  /// Approximate end time based on start time + activity duration.
+  String get scheduledEndTime {
+    final startMins = switch (timeSlot) {
+      'morning' => 9 * 60,
+      'afternoon' => 13 * 60,
+      'evening' => 18 * 60 + 30,
+      _ => 9 * 60,
+    };
+    final end = startMins + estimatedDurationMinutes;
+    final h = (end ~/ 60) % 24;
+    final m = end % 60;
+    final period = h >= 12 ? 'PM' : 'AM';
+    final display = h > 12 ? h - 12 : (h == 0 ? 12 : h);
+    return '$display:${m.toString().padLeft(2, '0')} $period';
+  }
+
   Activity copyWith({
     String? id,
     String? title,
